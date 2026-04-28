@@ -1,0 +1,44 @@
+# ============================================
+# AEGIS Project — .gitignore
+# ============================================
+
+# --- Datasets (too large for GitHub) ---
+data/*.csv
+data/*.pcap
+data/*.parquet
+data/*.h5
+
+# --- Trained models (large .pkl files) ---
+# NOTE: We DO push models/saved/*.pkl (small enough)
+# But raw training artifacts are excluded:
+models/checkpoints/
+models/*.log
+
+# --- Python ---
+__pycache__/
+*.pyc
+*.pyo
+*.egg-info/
+dist/
+build/
+venv/
+env/
+.env
+
+# --- IDE ---
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# --- OS ---
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --- Jupyter (if used for EDA) ---
+.ipynb_checkpoints/
+
+# --- Logs ---
+logs/*.log
+*.log

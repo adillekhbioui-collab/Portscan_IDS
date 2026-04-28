@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEGIS — Cyber Threat Intelligence Dashboard</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+
+    <!-- ── Header ──────────────────────────────── -->
+    <header class="header">
+        <div class="header__brand">
+            <div class="header__logo">◆</div>
+            <div>
+                <h1 class="header__title">AEGIS</h1>
+                <p class="header__subtitle">Cyber Deception & Threat Intelligence</p>
+            </div>
+        </div>
+        <div class="header__status">
+            <span class="status-dot status-dot--active"></span>
+            <span>MONITORING ACTIVE</span>
+            <span class="header__clock" id="clock"></span>
+        </div>
+    </header>
+
+    <!-- ── Stats Bar ───────────────────────────── -->
+    <section class="stats-bar">
+        <div class="stat-card">
+            <div class="stat-card__value" id="stat-alerts">0</div>
+            <div class="stat-card__label">Total Alerts</div>
+        </div>
+        <div class="stat-card stat-card--danger">
+            <div class="stat-card__value" id="stat-threats">0</div>
+            <div class="stat-card__label">Active Threats</div>
+        </div>
+        <div class="stat-card stat-card--warning">
+            <div class="stat-card__value" id="stat-blocked">0</div>
+            <div class="stat-card__label">IPs Blocked</div>
+        </div>
+        <div class="stat-card stat-card--info">
+            <div class="stat-card__value" id="stat-honeypot">0</div>
+            <div class="stat-card__label">Honeypot Hits</div>
+        </div>
+    </section>
+
+    <!-- ── Main Grid ───────────────────────────── -->
+    <main class="dashboard-grid">
+
+        <!-- Left Column: Alert Feed -->
+        <section class="panel panel--alerts">
+            <div class="panel__header">
+                <h2 class="panel__title">⚡ Live Alert Feed</h2>
+                <span class="badge badge--pulse">LIVE</span>
+            </div>
+            <div class="panel__body" id="alert-feed">
+                <div class="empty-state">Waiting for detections...</div>
+            </div>
+        </section>
+
+        <!-- Right Column: Active Scanners -->
+        <section class="panel panel--scanners">
+            <div class="panel__header">
+                <h2 class="panel__title">🎯 Active Scanners</h2>
+            </div>
+            <div class="panel__body">
+                <table class="data-table" id="scanner-table">
+                    <thead>
+                        <tr>
+                            <th>Source IP</th>
+                            <th>Type</th>
+                            <th>Confidence</th>
+                            <th>Alerts</th>
+                            <th>Honeypot</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="scanner-tbody">
+                        <tr><td colspan="6" class="empty-state">No active scanners</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </section>
+
+        <!-- Bottom Left: Honeypot Interactions -->
+        <section class="panel panel--honeypot">
+            <div class="panel__header">
+                <h2 class="panel__title">🍯 Honeypot Activity</h2>
+            </div>
+            <div class="panel__body" id="honeypot-feed">
+                <div class="empty-state">No honeypot interactions yet</div>
+            </div>
+        </section>
+
+        <!-- Bottom Right: Attacker Profile -->
+        <section class="panel panel--profile">
+            <div class="panel__header">
+                <h2 class="panel__title">🕵️ Threat Actor Profile</h2>
+            </div>
+            <div class="panel__body" id="profile-card">
+                <div class="empty-state">Select a scanner to view profile</div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- ── Scripts ─────────────────────────────── -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.4/socket.io.min.js"></script>
+    <script src="{{ url_for('static', filename='dashboard.js') }}"></script>
+
+</body>
+</html>
