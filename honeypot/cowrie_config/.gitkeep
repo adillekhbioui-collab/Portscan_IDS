@@ -1,3 +1,0 @@
-# Cowrie honeypot configuration files go here
-# See: https://github.com/cowrie/cowrie
-# Deploy via Docker: docker run -p 2222:2222 cowrie/cowrie
