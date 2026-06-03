@@ -42,3 +42,6 @@ desktop.ini
 # --- Logs ---
 logs/*.log
 *.log
+
+detection/results/predictions_rf.csv
+detection/data/
