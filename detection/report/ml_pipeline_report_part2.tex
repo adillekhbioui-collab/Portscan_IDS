@@ -1,0 +1,232 @@
+%% =============================================================
+%% PART 2 — Sections X.6 to X.9
+%% Paste this content BEFORE \end{document} in ml_pipeline_report.tex
+%% =============================================================
+
+\subsection{Model Implementation}
+
+Three models were selected in accordance with the project's final plan, each providing a complementary approach to detection:
+
+\subsubsection{Random Forest}
+
+\textbf{Random Forest} is a supervised learning algorithm based on the \textit{bagging} (\textit{Bootstrap Aggregating}) principle. It builds an ensemble of $n$ decision trees, each trained on a random sub-sample of the data with a random subset of features. The final prediction is obtained by \textbf{majority vote}.
+
+\paragraph{Advantages for Port Scan detection:}
+\begin{itemize}
+    \item Robust to overfitting due to tree diversity
+    \item Effectively handles high-dimensional data
+    \item Provides a measure of \textit{feature importance}
+\end{itemize}
+
+\begin{lstlisting}[caption={Random Forest Training}]
+from sklearn.ensemble import RandomForestClassifier
+
+rf = RandomForestClassifier(
+    n_estimators=100,    # 100 decision trees
+    random_state=42
+)
+rf.fit(X_train_res, y_train_res)
+joblib.dump(rf, "../models/random_forest.pkl")
+\end{lstlisting}
+
+\subsubsection{XGBoost (eXtreme Gradient Boosting)}
+
+\textbf{XGBoost} is a \textit{gradient boosting} algorithm that builds decision trees \textbf{sequentially}, with each new tree correcting the errors of the previous ones. It integrates regularization ($L_1$ and $L_2$) to limit overfitting.
+
+\paragraph{Advantages for Port Scan detection:}
+\begin{itemize}
+    \item Considered state-of-the-art for tabular data
+    \item Gradient descent optimization with regularization
+    \item Native handling of missing values
+\end{itemize}
+
+\begin{lstlisting}[caption={XGBoost Training}]
+from xgboost import XGBClassifier
+
+xgb = XGBClassifier(
+    n_estimators=100,
+    learning_rate=0.1,   # Learning rate
+    max_depth=6,         # Maximum tree depth
+    random_state=42,
+    eval_metric="logloss"
+)
+xgb.fit(X_train_res, y_train_res)
+joblib.dump(xgb, "../models/xgboost.pkl")
+\end{lstlisting}
+
+\subsubsection{Isolation Forest}
+
+\textbf{Isolation Forest} is an \textbf{unsupervised} anomaly detection algorithm. Its principle is based on the idea that anomalies, being "few and different", are easier to isolate through random partitioning. The quicker a point is isolated (lower depth in the tree), the more likely it is to be an anomaly.
+
+\paragraph{Role in AEGIS Entropy:} This algorithm was selected for its theoretical ability to detect \textbf{"Low and Slow"} (slow and stealthy) attacks, which evade supervised models trained on aggressive attack signatures.
+
+\begin{lstlisting}[caption={Isolation Forest Training}]
+from sklearn.ensemble import IsolationForest
+
+iso = IsolationForest(
+    contamination='auto',  # Automatic threshold
+    random_state=42
+)
+iso.fit(X_train_scaled)    # Without SMOTE (unsupervised)
+joblib.dump(iso, "../models/isolation_forest.pkl")
+\end{lstlisting}
+
+%% =============================================================
+\subsection{Stratified K-Fold Cross-Validation}
+
+To ensure the statistical reliability of the results and avoid any dependence on a specific data split, a \textbf{10-fold Stratified Cross-Validation} (\textit{Stratified K-Fold}, $k=10$) was implemented.
+
+\paragraph{Principle:} The training dataset is divided into 10 equal-sized subsets (\textit{folds}). In each iteration, 9 folds are used for training and the 10\textsuperscript{th} is used for validation. The process is repeated 10 times, and the final score is the average of the 10 scores. The \textbf{stratified} option ensures that each fold preserves the original class proportions.
+
+\begin{lstlisting}[caption={10-Fold Stratified Cross-Validation}]
+from sklearn.model_selection import StratifiedKFold, cross_val_score
+
+cv = StratifiedKFold(n_splits=10, shuffle=True, random_state=42)
+
+rf_scores = cross_val_score(
+    rf, X_train_res, y_train_res,
+    cv=cv, scoring='f1', n_jobs=-1
+)
+
+xgb_scores = cross_val_score(
+    xgb, X_train_res, y_train_res,
+    cv=cv, scoring='f1', n_jobs=-1
+)
+\end{lstlisting}
+
+\begin{table}[H]
+\centering
+\caption{Stratified cross-validation results (F1-Score)}
+\label{tab:cv_results}
+\begin{tabular}{lcc}
+\toprule
+\textbf{Model} & \textbf{Mean F1} & \textbf{Standard Deviation ($\pm 2\sigma$)} \\
+\midrule
+Random Forest & 0.9993 & $\pm$ 0.0003 \\
+XGBoost & 0.9994 & $\pm$ 0.0003 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent \textit{Note:} Isolation Forest, being an unsupervised algorithm, cannot be evaluated via traditional cross-validation (it does not directly output an F1 score).
+
+%% =============================================================
+\subsection{Evaluation and Results}
+
+\subsubsection{Metrics Used}
+
+Model evaluation relies on six complementary metrics, each capturing a different aspect of performance:
+
+\begin{itemize}
+    \item \textbf{Accuracy}: overall proportion of correct predictions.
+    \begin{equation}
+        \text{Accuracy} = \frac{TP + TN}{TP + TN + FP + FN}
+    \end{equation}
+
+    \item \textbf{Precision}: out of instances predicted as attacks, how many actually are.
+    \begin{equation}
+        \text{Precision} = \frac{TP}{TP + FP}
+    \end{equation}
+
+    \item \textbf{Recall}: out of actual attacks, how many were detected.
+    \begin{equation}
+        \text{Recall} = \frac{TP}{TP + FN}
+    \end{equation}
+
+    \item \textbf{F1-Score}: harmonic mean of precision and recall.
+    \begin{equation}
+        \text{F1} = 2 \times \frac{\text{Precision} \times \text{Recall}}{\text{Precision} + \text{Recall}}
+    \end{equation}
+
+    \item \textbf{AUC-ROC}: Area Under the Receiver Operating Characteristic curve, measuring the model's ability to discriminate between classes.
+
+    \item \textbf{FPR} (False Positive Rate): proportion of benign traffic incorrectly classified as an attack.
+    \begin{equation}
+        \text{FPR} = \frac{FP}{FP + TN}
+    \end{equation}
+\end{itemize}
+
+\noindent where \textit{TP} = True Positive, \textit{TN} = True Negative, \textit{FP} = False Positive, \textit{FN} = False Negative.
+
+\subsubsection{Comparative Results}
+
+\begin{table}[H]
+\centering
+\caption{Performance comparison of the three models}
+\label{tab:results}
+\begin{tabular}{lcccccc}
+\toprule
+\textbf{Model} & \textbf{Accuracy} & \textbf{Precision} & \textbf{Recall} & \textbf{F1-Score} & \textbf{AUC-ROC} & \textbf{FPR} \\
+\midrule
+Random Forest & 99.91\% & 99.91\% & 99.93\% & 99.92\% & 0.9997 & 0.11\% \\
+XGBoost & 99.91\% & 99.91\% & 99.94\% & 99.92\% & 0.9999 & 0.11\% \\
+Isolation Forest & 18.22\% & 10.52\% & 6.32\% & 7.89\% & N/A & 66.94\% \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.32\textwidth}\includegraphics[width=\textwidth]{confusion_matrix_random_forest.png}\caption{Random Forest}\end{subfigure}\hfill
+\begin{subfigure}[b]{0.32\textwidth}\includegraphics[width=\textwidth]{confusion_matrix_xgboost.png}\caption{XGBoost}\end{subfigure}\hfill
+\begin{subfigure}[b]{0.32\textwidth}\includegraphics[width=\textwidth]{confusion_matrix_isolation_forest.png}\caption{Isolation Forest}\end{subfigure}
+\caption{Confusion matrices of the three models on the test set}
+\label{fig:confusion_matrices}
+\end{figure}
+
+\begin{figure}[H]
+\centering
+\begin{subfigure}[b]{0.48\textwidth}\includegraphics[width=\textwidth]{roc_random_forest.png}\caption{Random Forest}\end{subfigure}\hfill
+\begin{subfigure}[b]{0.48\textwidth}\includegraphics[width=\textwidth]{roc_xgboost.png}\caption{XGBoost}\end{subfigure}
+\caption{ROC curves of the supervised models (Random Forest and XGBoost)}
+\label{fig:roc_curves}
+\end{figure}
+
+\subsubsection{Success Criteria Verification}
+
+The project's final plan defines three performance thresholds that the detection system must achieve. The table below compares the obtained results against these criteria:
+
+\begin{table}[H]
+\centering
+\caption{Verification of project success criteria}
+\label{tab:success}
+\begin{tabular}{lccccc}
+\toprule
+\textbf{Criterion} & \textbf{Threshold} & \textbf{RF} & \textbf{Status} & \textbf{XGBoost} & \textbf{Status} \\
+\midrule
+F1-Score & $\geq$ 88\% & 99.92\% & \textbf{PASS} & 99.92\% & \textbf{PASS} \\
+Accuracy & $\geq$ 90\% & 99.91\% & \textbf{PASS} & 99.91\% & \textbf{PASS} \\
+FPR & $<$ 6\% & 0.11\% & \textbf{PASS} & 0.11\% & \textbf{PASS} \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\noindent Both supervised models (Random Forest and XGBoost) significantly exceed all defined success criteria.
+
+\subsubsection{Analysis of Isolation Forest's Failure}
+
+Isolation Forest was integrated into the architecture for its theoretical capacity to detect stealthy \textbf{"Low and Slow"} attacks. However, empirical results on the CICIDS2017 dataset reveal very poor performance (F1-Score of 7.89\%, FPR of 66.94\%). This underperformance is explained by two fundamental factors:
+
+\paragraph{1. The Majority Anomaly Paradox:} Isolation Forest is mathematically designed to isolate data points that are \textit{"few and different"}, i.e., anomalies typically representing less than 5\% of the dataset. However, in our CICIDS2017 dataset, the \texttt{PortScan} class constitutes \textbf{55.48\%} of the traffic — it is the \textit{majority} class. The algorithm, trained on the complete set (normal traffic + attacks), is unable to distinguish attacks as anomalies since they represent the statistical norm of the dataset.
+
+\paragraph{2. Mismatch between Aggressive and Stealthy Signatures:} The port scans present in the CICIDS2017 dataset are primarily aggressive \texttt{Nmap} scans, generating a massive burst volume of packets. These signatures are dense and do not match the "Low and Slow" profile (spaced flows over time, low volume) for which Isolation Forest was selected.
+
+\paragraph{Conclusion:} This failure does not undermine the architectural relevance of Isolation Forest in the AEGIS Entropy system. Instead, it demonstrates a methodological limitation: to be effective in anomaly detection, Isolation Forest must be trained exclusively on verified \textbf{BENIGN} traffic (semi-supervised approach) in order to establish a clean baseline of normal network behavior. In a production environment where attacks are genuinely rare and stealthy, this model would regain its relevance. For detecting the aggressive scans present in this dataset, the supervised models (Random Forest and XGBoost) are vastly superior.
+
+%% =============================================================
+\subsection{Conclusion}
+
+This chapter presented the complete design and implementation of the machine learning detection pipeline for the AEGIS Entropy system. The pipeline, built according to a rigorous methodology, includes:
+
+\begin{enumerate}
+    \item \textbf{Comprehensive data preprocessing} (cleaning, IQR outlier detection, skewness correction via logarithmic transformation)
+    \item \textbf{Normalization} via StandardScaler with strict data leakage prevention
+    \item \textbf{Class balancing} via SMOTE applied solely on the training set
+    \item The \textbf{training} of three complementary models (Random Forest, XGBoost, Isolation Forest)
+    \item A \textbf{10-fold Stratified Cross-Validation} confirming the stability of results
+    \item A comprehensive \textbf{evaluation} using six metrics and verification of success criteria
+\end{enumerate}
+
+The results demonstrate that the supervised models achieve exceptional performance: an F1-Score of \textbf{99.92\%}, an Accuracy of \textbf{99.91\%}, and an FPR of only \textbf{0.11\%}, vastly exceeding the thresholds required by the project's final plan. The analysis of Isolation Forest identified the necessary conditions for its effective deployment in a real-world environment.
+
+The pipeline is now ready for integration with the real-time capture modules, the honeypot system, and the monitoring dashboard, which will be the subjects of the subsequent chapters.
