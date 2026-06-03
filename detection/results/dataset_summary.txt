@@ -1,0 +1,27 @@
+Dataset: CICIDS2017 - Friday Working Hours Afternoon PortScan
+
+Dataset Shape:
+286467 rows
+79 columns
+
+Target Classes:
+BENIGN
+PortScan
+
+Selected Features:
+- Destination Port
+- Flow Duration
+- Total Fwd Packets
+- SYN Flag Count
+- RST Flag Count
+- ACK Flag Count
+- Flow IAT Mean
+- Bwd Packet Length Mean
+
+Models Used:
+- Random Forest
+- XGBoost
+- Isolation Forest
+
+Project:
+Aegis Entropy - AI-Based Intelligent System for Network Security Monitoring & Automated Response
