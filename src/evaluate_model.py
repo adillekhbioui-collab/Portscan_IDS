@@ -1,7 +1,9 @@
+import os
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+import joblib
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
@@ -9,274 +11,145 @@ from sklearn.metrics import (
     precision_score,
     recall_score,
     f1_score,
-    confusion_matrix
+    confusion_matrix,
+    classification_report,
+    roc_curve,
+    roc_auc_score
 )
 
-from sklearn.ensemble import RandomForestClassifier
-from sklearn.ensemble import IsolationForest
-from xgboost import XGBClassifier
+print("=====================================================")
+print("1. LOADING DATA & MODELS")
+print("=====================================================")
 
-# =====================================================
-# 1. CHARGEMENT DU DATASET
-# =====================================================
-
-df = pd.read_csv(
-    "../data/Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv"
-)
-
-# =====================================================
-# 2. FEATURES SELECTIONNEES
-# =====================================================
+try:
+    df = pd.read_csv("../data/preprocessed.csv")
+except FileNotFoundError:
+    df = pd.read_csv("../data/Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv")
+    df.columns = [col.strip() for col in df.columns]
 
 features = [
-    ' Destination Port',
-    ' Flow Duration',
-    ' Total Fwd Packets',
-    ' SYN Flag Count',
-    ' RST Flag Count',
-    ' ACK Flag Count',
-    ' Flow IAT Mean',
-    ' Bwd Packet Length Mean'
+    'Destination Port',
+    'Flow Duration',
+    'Total Fwd Packets',
+    'SYN Flag Count',
+    'RST Flag Count',
+    'ACK Flag Count',
+    'Flow IAT Mean',
+    'Bwd Packet Length Mean',
+    'Init_Win_bytes_forward'
 ]
 
-X = df[features]
-
-# =====================================================
-# 3. NETTOYAGE
-# =====================================================
+X = df[features].copy()
+X['shadow_node_interaction'] = 0
+X['mtd_port_delta'] = 0
 
 X = X.replace([np.inf, -np.inf], np.nan)
-X = X.fillna(0)
+X = X.fillna(X.median())
 
-# =====================================================
-# 4. LABELS
-# =====================================================
-
-y = df[' Label'].apply(
-    lambda x: 1 if x.strip() == "PortScan" else 0
-)
-
-# =====================================================
-# 5. TRAIN / TEST SPLIT
-# =====================================================
+y = df['Label'].apply(lambda x: 1 if str(x).strip() == "PortScan" else 0)
 
 X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
+    X, y,
     test_size=0.2,
     random_state=42,
     stratify=y
 )
 
-# =====================================================
-# FONCTION D'EVALUATION
-# =====================================================
+# Load Models
+scaler = joblib.load("../models/scaler.pkl")
+rf = joblib.load("../models/random_forest.pkl")
+xgb = joblib.load("../models/xgboost.pkl")
+iso = joblib.load("../models/isolation_forest.pkl")
 
+X_test_scaled = scaler.transform(X_test)
+
+os.makedirs("../results", exist_ok=True)
 results = []
 
-def evaluate_model(name, y_true, y_pred):
-
+def evaluate_and_verify(name, model, X_test_data, y_true):
+    print("\n" + "=" * 60)
+    print(f"EVALUATING: {name}")
+    print("=" * 60)
+    
+    y_pred = model.predict(X_test_data)
+    
+    # ISO Forest conversion
+    if name == "Isolation Forest":
+        y_pred = np.where(y_pred == -1, 1, 0)
+        
     accuracy = accuracy_score(y_true, y_pred)
-    precision = precision_score(
-        y_true,
-        y_pred,
-        zero_division=0
-    )
-    recall = recall_score(
-        y_true,
-        y_pred,
-        zero_division=0
-    )
-    f1 = f1_score(
-        y_true,
-        y_pred,
-        zero_division=0
-    )
+    precision = precision_score(y_true, y_pred, zero_division=0)
+    recall = recall_score(y_true, y_pred, zero_division=0)
+    f1 = f1_score(y_true, y_pred, zero_division=0)
+    
+    # Confusion Matrix & FPR
+    tn, fp, fn, tp = confusion_matrix(y_true, y_pred).ravel()
+    fpr = fp / (fp + tn) if (fp + tn) > 0 else 0.0
+    
+    # AUC-ROC
+    auc = "N/A"
+    try:
+        if name != "Isolation Forest":
+            y_probs = model.predict_proba(X_test_data)[:, 1]
+            auc = roc_auc_score(y_true, y_probs)
+            
+            # Save ROC Curve
+            fpr_roc, tpr_roc, _ = roc_curve(y_true, y_probs)
+            plt.figure(figsize=(6, 4))
+            plt.plot(fpr_roc, tpr_roc, label=f'{name} (AUC = {auc:.4f})')
+            plt.plot([0, 1], [0, 1], 'k--')
+            plt.xlabel('False Positive Rate')
+            plt.ylabel('True Positive Rate')
+            plt.title(f'{name} ROC Curve')
+            plt.legend()
+            plt.tight_layout()
+            plt.savefig(f"../results/roc_{name.replace(' ', '_').lower()}.png")
+            plt.close()
+    except Exception as e:
+        print(f"AUC calculation failed: {e}")
 
     results.append([
         name,
         round(accuracy, 4),
         round(precision, 4),
         round(recall, 4),
-        round(f1, 4)
+        round(f1, 4),
+        round(auc, 4) if isinstance(auc, float) else auc,
+        round(fpr, 4)
     ])
+    
+    # Print Classification Report
+    print(classification_report(y_true, y_pred, target_names=['BENIGN', 'PortScan']))
+    
+    print("\n--- SUCCESS CRITERIA VERIFICATION ---")
+    print(f"F1-Score (>= 88%) : {f1*100:.2f}% -> {'[PASS]' if f1 >= 0.88 else '[FAIL]'}")
+    print(f"Accuracy (>= 90%) : {accuracy*100:.2f}% -> {'[PASS]' if accuracy >= 0.90 else '[FAIL]'}")
+    print(f"FPR (< 6%)       : {fpr*100:.2f}% -> {'[PASS]' if fpr < 0.06 else '[FAIL]'}")
+    
+    # Save Confusion Matrix
+    cm = confusion_matrix(y_true, y_pred)
+    plt.figure(figsize=(6, 4))
+    sns.heatmap(cm, annot=True, fmt='d', cmap='Blues')
+    plt.title(f"{name} Confusion Matrix")
+    plt.xlabel('Predicted')
+    plt.ylabel('Actual')
+    plt.savefig(f"../results/confusion_matrix_{name.replace(' ', '_').lower()}.png")
+    plt.close()
 
-    print("\n")
-    print("=" * 50)
-    print(name)
-    print("=" * 50)
+# Evaluate Models
+evaluate_and_verify("Random Forest", rf, X_test_scaled, y_test)
+evaluate_and_verify("XGBoost", xgb, X_test_scaled, y_test)
+evaluate_and_verify("Isolation Forest", iso, X_test_scaled, y_test)
 
-    print("Accuracy  :", round(accuracy, 4))
-    print("Precision :", round(precision, 4))
-    print("Recall    :", round(recall, 4))
-    print("F1 Score  :", round(f1, 4))
-
-
-# =====================================================
-# 6. RANDOM FOREST
-# =====================================================
-
-rf = RandomForestClassifier(
-    n_estimators=100,
-    random_state=42
-)
-
-rf.fit(X_train, y_train)
-
-rf_pred = rf.predict(X_test)
-
-evaluate_model(
-    "Random Forest",
-    y_test,
-    rf_pred
-)
-
-# Confusion Matrix RF
-
-cm_rf = confusion_matrix(y_test, rf_pred)
-
-plt.figure(figsize=(6, 4))
-sns.heatmap(
-    cm_rf,
-    annot=True,
-    fmt='d'
-)
-
-plt.title("Random Forest Confusion Matrix")
-
-plt.savefig(
-    "../results/confusion_matrix_rf.png"
-)
-
-plt.close()
-
-# =====================================================
-# 7. XGBOOST
-# =====================================================
-
-xgb = XGBClassifier(
-    n_estimators=100,
-    learning_rate=0.1,
-    max_depth=6,
-    random_state=42,
-    eval_metric="logloss"
-)
-
-xgb.fit(X_train, y_train)
-
-xgb_pred = xgb.predict(X_test)
-
-evaluate_model(
-    "XGBoost",
-    y_test,
-    xgb_pred
-)
-
-# Confusion Matrix XGB
-
-cm_xgb = confusion_matrix(y_test, xgb_pred)
-
-plt.figure(figsize=(6, 4))
-sns.heatmap(
-    cm_xgb,
-    annot=True,
-    fmt='d'
-)
-
-plt.title("XGBoost Confusion Matrix")
-
-plt.savefig(
-    "../results/confusion_matrix_xgb.png"
-)
-
-plt.close()
-
-# =====================================================
-# 8. ISOLATION FOREST
-# =====================================================
-
-iso = IsolationForest(
-    contamination=0.1,
-    random_state=42
-)
-
-iso.fit(X_train)
-
-iso_pred = iso.predict(X_test)
-
-# Conversion :
-# -1 = anomalie = PortScan
-#  1 = normal = BENIGN
-
-iso_pred = np.where(
-    iso_pred == -1,
-    1,
-    0
-)
-
-evaluate_model(
-    "Isolation Forest",
-    y_test,
-    iso_pred
-)
-
-# Confusion Matrix ISO
-
-cm_iso = confusion_matrix(y_test, iso_pred)
-
-plt.figure(figsize=(6, 4))
-sns.heatmap(
-    cm_iso,
-    annot=True,
-    fmt='d'
-)
-
-plt.title("Isolation Forest Confusion Matrix")
-
-plt.savefig(
-    "../results/confusion_matrix_iso.png"
-)
-
-plt.close()
-
-# =====================================================
-# 9. EXPORT DES METRIQUES
-# =====================================================
-
+# Export Metrics
 results_df = pd.DataFrame(
     results,
-    columns=[
-        "Model",
-        "Accuracy",
-        "Precision",
-        "Recall",
-        "F1 Score"
-    ]
+    columns=["Model", "Accuracy", "Precision", "Recall", "F1 Score", "AUC-ROC", "FPR"]
 )
+results_df.to_csv("../results/metrics.csv", index=False)
 
-results_df.to_csv(
-    "../results/metrics.csv",
-    index=False
-)
-
-print("\n")
+print("\n" + "=" * 60)
+print("FINAL METRICS COMPARISON")
 print("=" * 60)
-print("RESULTATS SAUVEGARDES")
-print("=" * 60)
-
-print(
-    "\nDossier results :"
-)
-
-print(
-    "- confusion_matrix_rf.png"
-)
-print(
-    "- confusion_matrix_xgb.png"
-)
-print(
-    "- confusion_matrix_iso.png"
-)
-print(
-    "- metrics.csv"
-)
+print(results_df)
+print("\nResults and plots saved to ../results/")
