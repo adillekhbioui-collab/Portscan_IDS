@@ -3,19 +3,7 @@ import argparse
 import pandas as pd
 import numpy as np
 import joblib
-
-
-FEATURES = [
-    'Destination Port',
-    'Flow Duration',
-    'Total Fwd Packets',
-    'SYN Flag Count',
-    'RST Flag Count',
-    'ACK Flag Count',
-    'Flow IAT Mean',
-    'Bwd Packet Length Mean',
-    'Init_Win_bytes_forward'
-]
+from config import FEATURES
 
 def load_model(path):
     return joblib.load(path)

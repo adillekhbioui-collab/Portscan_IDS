@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 import joblib
+from config import FEATURES as features
 
 from sklearn.model_selection import train_test_split
 from sklearn.metrics import (
@@ -26,18 +27,6 @@ try:
 except FileNotFoundError:
     df = pd.read_csv("../data/Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv")
     df.columns = [col.strip() for col in df.columns]
-
-features = [
-    'Destination Port',
-    'Flow Duration',
-    'Total Fwd Packets',
-    'SYN Flag Count',
-    'RST Flag Count',
-    'ACK Flag Count',
-    'Flow IAT Mean',
-    'Bwd Packet Length Mean',
-    'Init_Win_bytes_forward'
-]
 
 X = df[features].copy()
 X['shadow_node_interaction'] = 0

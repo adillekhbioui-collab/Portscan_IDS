@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from config import FEATURES
 
 print("==========================")
 print("Loading Dataset")
@@ -12,19 +13,6 @@ df = pd.read_csv("../data/Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv")
 
 # Clean column names (strip leading/trailing spaces)
 df.columns = [col.strip() for col in df.columns]
-
-# Features of interest based on Data Dictionary + proxy
-FEATURES = [
-    'Destination Port',
-    'Flow Duration',
-    'Total Fwd Packets',
-    'SYN Flag Count',
-    'RST Flag Count',
-    'ACK Flag Count',
-    'Flow IAT Mean',
-    'Bwd Packet Length Mean',
-    'Init_Win_bytes_forward'
-]
 
 print("Dimensions :", df.shape)
 print("\nInfo Dataset :")

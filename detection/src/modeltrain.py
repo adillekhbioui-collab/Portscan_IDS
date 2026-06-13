@@ -2,6 +2,7 @@ import os
 import pandas as pd
 import numpy as np
 import joblib
+from config import FEATURES as features
 
 from sklearn.model_selection import train_test_split, StratifiedKFold, cross_val_score
 from sklearn.preprocessing import StandardScaler
@@ -34,19 +35,6 @@ except FileNotFoundError:
 print("====================================")
 print("2. FEATURES")
 print("====================================")
-
-# 10 features mapped from Data Dictionary
-features = [
-    'Destination Port',
-    'Flow Duration',
-    'Total Fwd Packets',
-    'SYN Flag Count',
-    'RST Flag Count',
-    'ACK Flag Count',
-    'Flow IAT Mean',
-    'Bwd Packet Length Mean',
-    'Init_Win_bytes_forward'
-]
 
 X = df[features].copy()
 

@@ -2,24 +2,13 @@ import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
+from config import FEATURES
 
 try:
     df = pd.read_csv("../data/preprocessed.csv")
 except FileNotFoundError:
     df = pd.read_csv("../data/Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv")
     df.columns = [col.strip() for col in df.columns]
-
-FEATURES = [
-    'Destination Port',
-    'Flow Duration',
-    'Total Fwd Packets',
-    'SYN Flag Count',
-    'RST Flag Count',
-    'ACK Flag Count',
-    'Flow IAT Mean',
-    'Bwd Packet Length Mean',
-    'Init_Win_bytes_forward'
-]
 
 X = df[FEATURES].copy()
 X['shadow_node_interaction'] = 0
