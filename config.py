@@ -62,3 +62,10 @@ DASHBOARD_REFRESH_MS = 2000    # Socket.IO push interval (milliseconds)
 
 # --- Blocking ---
 AUTO_UNBLOCK_MINUTES = 30      # TTL for iptables DROP rules
+
+# --- Deception & MTD ---
+DECEPTION_LOG_FILE = os.path.join(DATA_DIR, "deception_logs.json")
+DECEPTION_PORT_START = 1000    # First port for the deception surface
+DECEPTION_PORT_END = 1100      # Last port for the deception surface
+BAN_THRESHOLD = 10             # Events before auto-blackholing an IP
+DECEPTION_INTERFACE = IDS_INTERFACE  # Interface for NFQUEUE hook (MTD)

@@ -1,0 +1,763 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Aegis Entropy - CICIDS2017 Detection Dashboard</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg-primary:#0a0e1a;--bg-secondary:#111827;--bg-card:#1a1f35;--bg-card-hover:#1f2642;
+  --border:#2a3152;--border-glow:#3b82f6;
+  --text-primary:#f1f5f9;--text-secondary:#94a3b8;--text-muted:#64748b;
+  --accent-cyan:#06b6d4;--accent-blue:#3b82f6;--accent-purple:#8b5cf6;
+  --accent-green:#10b981;--accent-red:#ef4444;--accent-amber:#f59e0b;
+  --accent-cyan-dim:rgba(6,182,212,.15);--accent-green-dim:rgba(16,185,129,.15);
+  --accent-red-dim:rgba(239,68,68,.15);--accent-blue-dim:rgba(59,130,246,.15);
+  --accent-purple-dim:rgba(139,92,246,.15);
+  --radius:12px;--radius-sm:8px;--radius-lg:16px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);--shadow-glow:0 0 30px rgba(6,182,212,.08);
+  --font-sans:'Inter',system-ui,-apple-system,sans-serif;
+  --font-mono:'JetBrains Mono',monospace;
+  --transition:all .2s cubic-bezier(.4,0,.2,1);
+}
+html{font-size:16px;scroll-behavior:smooth}
+body{font-family:var(--font-sans);background:var(--bg-primary);color:var(--text-primary);line-height:1.6;min-height:100vh;overflow-x:hidden}
+a{color:var(--accent-cyan);text-decoration:none}
+a:hover{text-decoration:underline}
+
+/* Scrollbar */
+::-webkit-scrollbar{width:6px;height:6px}
+::-webkit-scrollbar-track{background:var(--bg-secondary)}
+::-webkit-scrollbar-thumb{background:var(--border);border-radius:3px}
+::-webkit-scrollbar-thumb:hover{background:var(--text-muted)}
+
+/* Layout */
+.app{display:flex;min-height:100vh}
+.sidebar{width:260px;background:var(--bg-secondary);border-right:1px solid var(--border);padding:24px 16px;display:flex;flex-direction:column;position:fixed;top:0;left:0;height:100vh;z-index:40;transition:transform .3s ease}
+.main{margin-left:260px;flex:1;padding:24px 32px 48px;min-width:0}
+
+/* Sidebar */
+.logo{display:flex;align-items:center;gap:12px;padding:0 8px 24px;border-bottom:1px solid var(--border);margin-bottom:24px}
+.logo-icon{width:40px;height:40px;background:linear-gradient(135deg,var(--accent-cyan),var(--accent-blue));border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:#fff;flex-shrink:0}
+.logo-text{font-size:18px;font-weight:700;letter-spacing:-.02em}
+.logo-sub{font-size:11px;color:var(--text-muted);font-weight:400;letter-spacing:.05em;text-transform:uppercase}
+
+.nav-section{margin-bottom:24px}
+.nav-label{font-size:10px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.1em;padding:0 12px;margin-bottom:8px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:var(--radius-sm);color:var(--text-secondary);font-size:14px;font-weight:500;cursor:pointer;transition:var(--transition);border:1px solid transparent}
+.nav-item:hover{background:var(--bg-card);color:var(--text-primary);text-decoration:none}
+.nav-item.active{background:var(--accent-cyan-dim);color:var(--accent-cyan);border-color:rgba(6,182,212,.2)}
+.nav-item svg{width:18px;height:18px;flex-shrink:0;opacity:.7}
+.nav-item.active svg{opacity:1}
+
+.sidebar-footer{margin-top:auto;padding:16px 8px 0;border-top:1px solid var(--border)}
+.status-dot{width:8px;height:8px;border-radius:50%;background:var(--accent-green);display:inline-block;margin-right:8px;animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.4}}
+.sidebar-footer p{font-size:12px;color:var(--text-muted);display:flex;align-items:center}
+
+/* Header */
+.header{margin-bottom:32px}
+.header h1{font-size:28px;font-weight:800;letter-spacing:-.03em;margin-bottom:4px}
+.header h1 span{background:linear-gradient(135deg,var(--accent-cyan),var(--accent-blue));-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.header p{color:var(--text-secondary);font-size:14px}
+.header-meta{display:flex;gap:16px;margin-top:12px;flex-wrap:wrap}
+.header-badge{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;font-size:12px;font-weight:500;border:1px solid var(--border);background:var(--bg-card);color:var(--text-secondary)}
+.header-badge .dot{width:6px;height:6px;border-radius:50%}
+
+/* Grid */
+.grid{display:grid;gap:20px}
+.grid-4{grid-template-columns:repeat(4,1fr)}
+.grid-3{grid-template-columns:repeat(3,1fr)}
+.grid-2{grid-template-columns:repeat(2,1fr)}
+.grid-1-2{grid-template-columns:1fr 2fr}
+.grid-2-1{grid-template-columns:2fr 1fr}
+
+/* Cards */
+.card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);padding:24px;transition:var(--transition);position:relative;overflow:hidden}
+.card:hover{border-color:rgba(59,130,246,.3);box-shadow:var(--shadow-glow)}
+.card-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:600;color:var(--text-secondary);text-transform:uppercase;letter-spacing:.05em}
+.card-icon{width:36px;height:36px;border-radius:var(--radius-sm);display:flex;align-items:center;justify-content:center;font-size:16px}
+
+/* KPI Cards */
+.kpi{text-align:center;padding:28px 20px}
+.kpi-value{font-size:36px;font-weight:800;font-family:var(--font-mono);letter-spacing:-.02em;margin:8px 0 4px}
+.kpi-label{font-size:13px;color:var(--text-muted);font-weight:500}
+.kpi-change{font-size:12px;font-weight:600;margin-top:8px;display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px}
+.kpi-change.up{color:var(--accent-green);background:var(--accent-green-dim)}
+.kpi-change.down{color:var(--accent-red);background:var(--accent-red-dim)}
+
+/* Metric Bar */
+.metric-row{display:flex;align-items:center;justify-content:space-between;padding:12px 0;border-bottom:1px solid rgba(42,49,82,.5)}
+.metric-row:last-child{border-bottom:none}
+.metric-label{font-size:13px;color:var(--text-secondary);font-weight:500}
+.metric-value{font-size:14px;font-weight:700;font-family:var(--font-mono)}
+.metric-bar{height:6px;background:var(--bg-primary);border-radius:3px;flex:1;margin:0 16px;position:relative;overflow:hidden}
+.metric-bar-fill{height:100%;border-radius:3px;transition:width 1s cubic-bezier(.4,0,.2,1)}
+
+/* Confusion Matrix */
+.cm-grid{display:grid;grid-template-columns:auto 1fr 1fr;grid-template-rows:auto 1fr 1fr;gap:4px;max-width:320px;margin:0 auto}
+.cm-cell{display:flex;align-items:center;justify-content:center;border-radius:var(--radius-sm);font-family:var(--font-mono);font-weight:600;font-size:16px;min-height:80px;flex-direction:column;gap:2px}
+.cm-cell span{font-size:10px;font-weight:500;opacity:.7}
+.cm-header{display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+.cm-tn{background:rgba(16,185,129,.15);color:var(--accent-green)}
+.cm-fp{background:rgba(239,68,68,.1);color:var(--accent-red)}
+.cm-fn{background:rgba(245,158,11,.1);color:var(--accent-amber)}
+.cm-tp{background:rgba(6,182,212,.15);color:var(--accent-cyan)}
+
+/* Table */
+.data-table{width:100%;border-collapse:collapse;font-size:13px}
+.data-table th{text-align:left;padding:10px 12px;font-weight:600;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em;font-size:11px;border-bottom:1px solid var(--border)}
+.data-table td{padding:10px 12px;border-bottom:1px solid rgba(42,49,82,.3)}
+.data-table tr:hover td{background:rgba(59,130,246,.03)}
+.data-table .mono{font-family:var(--font-mono);font-weight:500}
+
+/* Tag */
+.tag{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:12px;font-size:11px;font-weight:600}
+.tag-pass{color:var(--accent-green);background:var(--accent-green-dim)}
+.tag-fail{color:var(--accent-red);background:var(--accent-red-dim)}
+.tag-info{color:var(--accent-cyan);background:var(--accent-cyan-dim)}
+.tag-warn{color:var(--accent-amber);background:rgba(245,158,11,.15)}
+
+/* Chart Container */
+.chart-wrap{position:relative;width:100%;min-height:280px}
+.chart-wrap canvas{width:100%!important}
+
+/* Simulation Panel */
+.sim-panel{background:linear-gradient(135deg,rgba(139,92,246,.08),rgba(6,182,212,.08));border:1px solid rgba(139,92,246,.2);border-radius:var(--radius-lg);padding:24px}
+.sim-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin-top:16px}
+.sim-stat{text-align:center;padding:16px;background:rgba(0,0,0,.2);border-radius:var(--radius);border:1px solid rgba(255,255,255,.05)}
+.sim-stat-value{font-size:28px;font-weight:800;font-family:var(--font-mono);margin:4px 0}
+.sim-stat-label{font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em}
+
+/* Live Indicator */
+.live-dot{width:8px;height:8px;border-radius:50%;background:var(--accent-green);display:inline-block;animation:pulse 1.5s infinite;margin-right:6px}
+
+/* Animations */
+@keyframes fadeInUp{from{opacity:0;transform:translateY(20px)}to{opacity:1;transform:translateY(0)}}
+.animate-in{animation:fadeInUp .5s cubic-bezier(.4,0,.2,1) forwards;opacity:0}
+.delay-1{animation-delay:.1s}.delay-2{animation-delay:.2s}.delay-3{animation-delay:.3s}.delay-4{animation-delay:.4s}
+
+/* Responsive */
+@media(max-width:1200px){.grid-4{grid-template-columns:repeat(2,1fr)}.grid-3{grid-template-columns:repeat(2,1fr)}}
+@media(max-width:900px){
+  .sidebar{transform:translateX(-100%)}
+  .sidebar.open{transform:translateX(0)}
+  .main{margin-left:0;padding:16px}
+  .grid-4,.grid-3,.grid-2,.grid-1-2,.grid-2-1{grid-template-columns:1fr}
+  .sim-grid{grid-template-columns:1fr}
+  .mobile-toggle{display:flex!important}
+}
+.mobile-toggle{display:none;position:fixed;top:12px;left:12px;z-index:50;width:40px;height:40px;border-radius:var(--radius-sm);background:var(--bg-card);border:1px solid var(--border);align-items:center;justify-content:center;cursor:pointer;color:var(--text-primary)}
+.overlay{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:35}
+.overlay.active{display:block}
+
+/* Section Spacing */
+.section{margin-bottom:32px}
+.section-title{font-size:18px;font-weight:700;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.section-title svg{color:var(--accent-cyan)}
+
+/* Benchmark Banner */
+.benchmark-banner{background:linear-gradient(135deg,rgba(16,185,129,.1),rgba(6,182,212,.1));border:1px solid rgba(16,185,129,.25);border-radius:var(--radius-lg);padding:20px 24px;display:flex;align-items:center;gap:16px;margin-bottom:32px}
+.benchmark-icon{width:48px;height:48px;border-radius:50%;background:var(--accent-green-dim);display:flex;align-items:center;justify-content:center;font-size:24px;flex-shrink:0}
+.benchmark-text h3{font-size:16px;font-weight:700;color:var(--accent-green);margin-bottom:2px}
+.benchmark-text p{font-size:13px;color:var(--text-secondary)}
+.benchmark-checks{display:flex;gap:12px;margin-left:auto;flex-wrap:wrap}
+.benchmark-check{display:flex;align-items:center;gap:6px;font-size:12px;font-weight:600;padding:6px 14px;border-radius:20px;border:1px solid rgba(16,185,129,.3);color:var(--accent-green);background:var(--accent-green-dim)}
+
+/* Feature List */
+.feature-pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:16px;font-size:12px;font-weight:500;background:var(--bg-primary);border:1px solid var(--border);color:var(--text-secondary);margin:2px}
+.feature-pill.core{border-color:rgba(6,182,212,.3);color:var(--accent-cyan);background:var(--accent-cyan-dim)}
+.feature-pill.tcp{border-color:rgba(139,92,246,.3);color:var(--accent-purple);background:var(--accent-purple-dim)}
+.feature-pill.timing{border-color:rgba(245,158,11,.3);color:var(--accent-amber);background:rgba(245,158,11,.15)}
+.feature-pill.baseline{border-color:rgba(16,185,129,.3);color:var(--accent-green);background:var(--accent-green-dim)}
+.feature-pill.synthetic{border-color:rgba(239,68,68,.3);color:var(--accent-red);background:var(--accent-red-dim)}
+</style>
+</head>
+<body>
+
+<!-- Mobile Toggle -->
+<button class="mobile-toggle" onclick="toggleSidebar()" aria-label="Toggle navigation">
+  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+</button>
+<div class="overlay" id="overlay" onclick="toggleSidebar()"></div>
+
+<div class="app">
+<!-- Sidebar -->
+<aside class="sidebar" id="sidebar">
+  <div class="logo">
+    <div class="logo-icon">A</div>
+    <div>
+      <div class="logo-text">Aegis Entropy</div>
+      <div class="logo-sub">Detection Engine</div>
+    </div>
+  </div>
+
+  <nav>
+    <div class="nav-section">
+      <div class="nav-label">Overview</div>
+      <a href="#overview" class="nav-item active">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg>
+        Dashboard
+      </a>
+      <a href="#models" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+        Model Performance
+      </a>
+      <a href="#features" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+        Features
+      </a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Analysis</div>
+      <a href="#confusion" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2"/><rect x="8" y="2" width="8" height="4" rx="1"/></svg>
+        Confusion Matrix
+      </a>
+      <a href="#smote" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M9 12l2 2 4-4"/></svg>
+        SMOTE Balancing
+      </a>
+      <a href="#simulation" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+        MTD Simulation
+      </a>
+    </div>
+    <div class="nav-section">
+      <div class="nav-label">Data</div>
+      <a href="#dataset" class="nav-item">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+        Dataset Info
+      </a>
+    </div>
+  </nav>
+
+  <div class="sidebar-footer">
+    <p><span class="status-dot"></span> Pipeline Active</p>
+  </div>
+</aside>
+
+<!-- Main Content -->
+<main class="main">
+
+  <!-- Header -->
+  <div class="header animate-in">
+    <h1>CICIDS2017 <span>PortScan Detection</span></h1>
+    <p>Data preprocessing, feature engineering, and model training pipeline for Aegis Entropy detection engine.</p>
+    <div class="header-meta">
+      <span class="header-badge"><span class="dot" style="background:var(--accent-green)"></span> Pipeline Complete</span>
+      <span class="header-badge"><span class="dot" style="background:var(--accent-cyan)"></span> 286,096 Flows Processed</span>
+      <span class="header-badge"><span class="dot" style="background:var(--accent-purple)"></span> 48 Features Engineered</span>
+      <span class="header-badge"><span class="dot" style="background:var(--accent-amber)"></span> 2 Models Trained</span>
+    </div>
+  </div>
+
+  <!-- Benchmark Banner -->
+  <div class="benchmark-banner animate-in delay-1">
+    <div class="benchmark-icon">&#10003;</div>
+    <div class="benchmark-text">
+      <h3>All Benchmarks Exceeded</h3>
+      <p>Both Random Forest and XGBoost surpass project thresholds on the CICIDS2017 test split.</p>
+    </div>
+    <div class="benchmark-checks">
+      <span class="benchmark-check">&#10003; F1 &ge; 88%</span>
+      <span class="benchmark-check">&#10003; Accuracy &ge; 90%</span>
+      <span class="benchmark-check">&#10003; FPR &lt; 6%</span>
+    </div>
+  </div>
+
+  <!-- KPI Cards -->
+  <div id="overview" class="section">
+    <div class="section-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+      Key Metrics
+    </div>
+    <div class="grid grid-4">
+      <div class="card kpi animate-in delay-1">
+        <div class="card-icon" style="background:var(--accent-green-dim);color:var(--accent-green);margin:0 auto">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 11-5.93-9.14"/><path d="M22 4L12 14.01l-3-3"/></svg>
+        </div>
+        <div class="kpi-value" style="color:var(--accent-green)">99.99%</div>
+        <div class="kpi-label">Best Accuracy</div>
+        <div class="kpi-change up">&#9650; +9.99% vs target</div>
+      </div>
+      <div class="card kpi animate-in delay-2">
+        <div class="card-icon" style="background:var(--accent-cyan-dim);color:var(--accent-cyan);margin:0 auto">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 20V10M18 20V4M6 20v-4"/></svg>
+        </div>
+        <div class="kpi-value" style="color:var(--accent-cyan)">99.99%</div>
+        <div class="kpi-label">Best F1-Score</div>
+        <div class="kpi-change up">&#9650; +11.99% vs target</div>
+      </div>
+      <div class="card kpi animate-in delay-3">
+        <div class="card-icon" style="background:var(--accent-purple-dim);color:var(--accent-purple);margin:0 auto">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 6L6 18M6 6l12 12"/></svg>
+        </div>
+        <div class="kpi-value" style="color:var(--accent-purple)">0.004%</div>
+        <div class="kpi-label">False Positive Rate</div>
+        <div class="kpi-change up">&#9660; 1500x below 6% limit</div>
+      </div>
+      <div class="card kpi animate-in delay-4">
+        <div class="card-icon" style="background:var(--accent-blue-dim);color:var(--accent-blue);margin:0 auto">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg>
+        </div>
+        <div class="kpi-value" style="color:var(--accent-blue)">286K</div>
+        <div class="kpi-label">Total Flows</div>
+        <div class="kpi-change up">158K PortScan + 127K Benign</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Model Comparison -->
+  <div id="models" class="section">
+    <div class="section-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2L2 7l10 5 10-5-10-5z"/><path d="M2 17l10 5 10-5"/><path d="M2 12l10 5 10-5"/></svg>
+      Model Performance Comparison
+    </div>
+    <div class="grid grid-2">
+      <!-- Random Forest Card -->
+      <div class="card animate-in delay-1">
+        <div class="card-header">
+          <div class="card-title">Random Forest Classifier</div>
+          <span class="tag tag-pass">&#10003; PRIMARY</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Accuracy</span>
+          <div class="metric-bar"><div class="metric-bar-fill" style="width:99.99%;background:var(--accent-green)"></div></div>
+          <span class="metric-value" style="color:var(--accent-green)">99.99%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">F1-Score</span>
+          <div class="metric-bar"><div class="metric-bar-fill" style="width:99.99%;background:var(--accent-cyan)"></div></div>
+          <span class="metric-value" style="color:var(--accent-cyan)">99.99%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Precision</span>
+          <div class="metric-bar"><div class="metric-bar-fill" style="width:100%;background:var(--accent-blue)"></div></div>
+          <span class="metric-value" style="color:var(--accent-blue)">100.00%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Recall</span>
+          <div class="metric-bar"><div class="metric-bar-fill" style="width:99.99%;background:var(--accent-purple)"></div></div>
+          <span class="metric-value" style="color:var(--accent-purple)">99.99%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">FPR</span>
+          <div class="metric-bar"><div class="metric-bar-fill" style="width:0.04%;background:var(--accent-green)"></div></div>
+          <span class="metric-value" style="color:var(--accent-green)">0.004%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">AUC-ROC</span>
+          <div class="metric-bar"><div class="metric-bar-fill" style="width:100%;background:var(--accent-amber)"></div></div>
+          <span class="metric-value" style="color:var(--accent-amber)">1.0000</span>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted)">
+          <span>Train Time: 66.6s</span>
+          <span>300 estimators</span>
+        </div>
+      </div>
+
+      <!-- XGBoost Card -->
+      <div class="card animate-in delay-2">
+        <div class="card-header">
+          <div class="card-title">XGBoost Classifier</div>
+          <span class="tag tag-info">SECONDARY</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Accuracy</span>
+          <div class="metric-bar"><div class="metric-bar-fill" style="width:100%;background:var(--accent-green)"></div></div>
+          <span class="metric-value" style="color:var(--accent-green)">100.00%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">F1-Score</span>
+          <div class="metric-bar"><div class="metric-bar-fill" style="width:100%;background:var(--accent-cyan)"></div></div>
+          <span class="metric-value" style="color:var(--accent-cyan)">100.00%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Precision</span>
+          <div class="metric-bar"><div class="metric-bar-fill" style="width:100%;background:var(--accent-blue)"></div></div>
+          <span class="metric-value" style="color:var(--accent-blue)">100.00%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">Recall</span>
+          <div class="metric-bar"><div class="metric-bar-fill" style="width:100%;background:var(--accent-purple)"></div></div>
+          <span class="metric-value" style="color:var(--accent-purple)">100.00%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">FPR</span>
+          <div class="metric-bar"><div class="metric-bar-fill" style="width:0.04%;background:var(--accent-green)"></div></div>
+          <span class="metric-value" style="color:var(--accent-green)">0.004%</span>
+        </div>
+        <div class="metric-row">
+          <span class="metric-label">AUC-ROC</span>
+          <div class="metric-bar"><div class="metric-bar-fill" style="width:100%;background:var(--accent-amber)"></div></div>
+          <span class="metric-value" style="color:var(--accent-amber)">1.0000</span>
+        </div>
+        <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border);display:flex;justify-content:space-between;font-size:12px;color:var(--text-muted)">
+          <span>Train Time: 17.5s</span>
+          <span>300 estimators, lr=0.1</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Confusion Matrix + Feature Importance -->
+  <div id="confusion" class="section">
+    <div class="section-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><path d="M3 9h18M9 21V9"/></svg>
+      Confusion Matrices
+    </div>
+    <div class="grid grid-2">
+      <!-- RF Confusion Matrix -->
+      <div class="card animate-in delay-1">
+        <div class="card-header">
+          <div class="card-title">Random Forest</div>
+          <span class="tag tag-pass">99.99% Acc</span>
+        </div>
+        <div class="cm-grid">
+          <div class="cm-header"></div>
+          <div class="cm-header">Pred BENIGN</div>
+          <div class="cm-header">Pred Scan</div>
+          <div class="cm-header">Actual BENIGN</div>
+          <div class="cm-cell cm-tn">25,458<span>True Neg</span></div>
+          <div class="cm-cell cm-fp">1<span>False Pos</span></div>
+          <div class="cm-header">Actual Scan</div>
+          <div class="cm-cell cm-fn">3<span>False Neg</span></div>
+          <div class="cm-cell cm-tp">31,758<span>True Pos</span></div>
+        </div>
+      </div>
+      <!-- XGB Confusion Matrix -->
+      <div class="card animate-in delay-2">
+        <div class="card-header">
+          <div class="card-title">XGBoost</div>
+          <span class="tag tag-pass">100.00% Acc</span>
+        </div>
+        <div class="cm-grid">
+          <div class="cm-header"></div>
+          <div class="cm-header">Pred BENIGN</div>
+          <div class="cm-header">Pred Scan</div>
+          <div class="cm-header">Actual BENIGN</div>
+          <div class="cm-cell cm-tn">25,458<span>True Neg</span></div>
+          <div class="cm-cell cm-fp">1<span>False Pos</span></div>
+          <div class="cm-header">Actual Scan</div>
+          <div class="cm-cell cm-fn">1<span>False Neg</span></div>
+          <div class="cm-cell cm-tp">31,760<span>True Pos</span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Feature Importance -->
+  <div id="features" class="section">
+    <div class="section-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14.7 6.3a1 1 0 000 1.4l1.6 1.6a1 1 0 001.4 0l3.77-3.77a6 6 0 01-7.94 7.94l-6.91 6.91a2.12 2.12 0 01-3-3l6.91-6.91a6 6 0 017.94-7.94l-3.76 3.76z"/></svg>
+      Feature Engineering Schema
+    </div>
+
+    <!-- Feature Categories -->
+    <div class="card animate-in delay-1" style="margin-bottom:20px">
+      <div class="card-header">
+        <div class="card-title">Aegis Telemetry Feature Map (48 Total)</div>
+      </div>
+      <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:16px">
+        <span class="feature-pill core">Distinct Dst Ports/IP</span>
+        <span class="feature-pill core">Unique Dst IPs/Src</span>
+        <span class="feature-pill core">Flow Duration</span>
+        <span class="feature-pill core">Total Fwd Packets</span>
+        <span class="feature-pill tcp">SYN Flag Count</span>
+        <span class="feature-pill tcp">RST Flag Count</span>
+        <span class="feature-pill tcp">ACK Flag Count</span>
+        <span class="feature-pill timing">IAT Mean</span>
+        <span class="feature-pill baseline">TTL Value</span>
+        <span class="feature-pill baseline">TCP Window Size</span>
+        <span class="feature-pill synthetic">Shadow Node Interaction</span>
+        <span class="feature-pill synthetic">MTD Port Delta</span>
+      </div>
+      <div style="display:flex;gap:16px;flex-wrap:wrap;font-size:12px;color:var(--text-muted)">
+        <span><span class="feature-pill core" style="padding:2px 8px;font-size:11px">Core</span> Volumetrics</span>
+        <span><span class="feature-pill tcp" style="padding:2px 8px;font-size:11px">TCP</span> Flags</span>
+        <span><span class="feature-pill timing" style="padding:2px 8px;font-size:11px">Timing</span> Analysis</span>
+        <span><span class="feature-pill baseline" style="padding:2px 8px;font-size:11px">Baseline</span> Values</span>
+        <span><span class="feature-pill synthetic" style="padding:2px 8px;font-size:11px">Synthetic</span> Injected</span>
+      </div>
+    </div>
+
+    <!-- Feature Importance Chart -->
+    <div class="grid grid-2">
+      <div class="card animate-in delay-2">
+        <div class="card-header">
+          <div class="card-title">Top 10 Features (RF Importance)</div>
+        </div>
+        <div class="chart-wrap"><canvas id="featureChart"></canvas></div>
+      </div>
+      <div class="card animate-in delay-3">
+        <div class="card-header">
+          <div class="card-title">Feature Importance Ranking</div>
+        </div>
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Feature</th><th>Importance</th><th>Category</th></tr></thead>
+          <tbody>
+            <tr><td class="mono">1</td><td>Subflow Fwd Bytes</td><td class="mono" style="color:var(--accent-green)">0.1378</td><td><span class="feature-pill core" style="padding:1px 6px">Core</span></td></tr>
+            <tr><td class="mono">2</td><td>Avg Fwd Segment Size</td><td class="mono" style="color:var(--accent-cyan)">0.0994</td><td><span class="feature-pill core" style="padding:1px 6px">Core</span></td></tr>
+            <tr><td class="mono">3</td><td>Fwd Packet Length Max</td><td class="mono" style="color:var(--accent-blue)">0.0878</td><td><span class="feature-pill core" style="padding:1px 6px">Core</span></td></tr>
+            <tr><td class="mono">4</td><td>Packet Length Mean</td><td class="mono" style="color:var(--accent-purple)">0.0703</td><td><span class="feature-pill core" style="padding:1px 6px">Core</span></td></tr>
+            <tr><td class="mono">5</td><td>Average Packet Size</td><td class="mono" style="color:var(--accent-amber)">0.0658</td><td><span class="feature-pill core" style="padding:1px 6px">Core</span></td></tr>
+            <tr><td class="mono">6</td><td>MTD Port Delta</td><td class="mono" style="color:var(--accent-red)">0.0641</td><td><span class="feature-pill synthetic" style="padding:1px 6px">Synthetic</span></td></tr>
+            <tr><td class="mono">7</td><td>Fwd Packet Length Mean</td><td class="mono" style="color:var(--accent-cyan)">0.0632</td><td><span class="feature-pill core" style="padding:1px 6px">Core</span></td></tr>
+            <tr><td class="mono">8</td><td>Bwd Packets/s</td><td class="mono" style="color:var(--accent-blue)">0.0430</td><td><span class="feature-pill timing" style="padding:1px 6px">Timing</span></td></tr>
+            <tr><td class="mono">9</td><td>PSH Flag Count</td><td class="mono" style="color:var(--accent-purple)">0.0414</td><td><span class="feature-pill tcp" style="padding:1px 6px">TCP</span></td></tr>
+            <tr><td class="mono">10</td><td>Max Packet Length</td><td class="mono" style="color:var(--accent-amber)">0.0384</td><td><span class="feature-pill core" style="padding:1px 6px">Core</span></td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SMOTE Balancing -->
+  <div id="smote" class="section">
+    <div class="section-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/><path d="M9 12l2 2 4-4"/></svg>
+      Class Imbalance Handling (SMOTE)
+    </div>
+    <div class="grid grid-3">
+      <div class="card animate-in delay-1">
+        <div class="card-header">
+          <div class="card-title">Before SMOTE (Training Split)</div>
+          <span class="tag tag-warn">Imbalanced</span>
+        </div>
+        <div class="chart-wrap" style="min-height:220px"><canvas id="smoteBeforeChart"></canvas></div>
+        <div style="margin-top:12px;font-size:12px;color:var(--text-muted);text-align:center">
+          228,876 training samples with class skew
+        </div>
+      </div>
+      <div class="card animate-in delay-2">
+        <div class="card-header">
+          <div class="card-title">After SMOTE (Resampled)</div>
+          <span class="tag tag-pass">Balanced</span>
+        </div>
+        <div class="chart-wrap" style="min-height:220px"><canvas id="smoteAfterChart"></canvas></div>
+        <div style="margin-top:12px;font-size:12px;color:var(--text-muted);text-align:center">
+          254,086 training samples after oversampling
+        </div>
+      </div>
+      <div class="card animate-in delay-3">
+        <div class="card-header">
+          <div class="card-title">SMOTE Configuration</div>
+        </div>
+        <div class="metric-row"><span class="metric-label">Strategy</span><span class="metric-value" style="color:var(--accent-cyan)">minority</span></div>
+        <div class="metric-row"><span class="metric-label">k_neighbors</span><span class="metric-value" style="color:var(--accent-purple)">5</span></div>
+        <div class="metric-row"><span class="metric-label">Random State</span><span class="metric-value" style="color:var(--accent-amber)">42</span></div>
+        <div class="metric-row"><span class="metric-label">Train Samples</span><span class="metric-value" style="color:var(--accent-green)">228,876</span></div>
+        <div class="metric-row"><span class="metric-label">Resampled</span><span class="metric-value" style="color:var(--accent-cyan)">254,086</span></div>
+        <div class="metric-row"><span class="metric-label">Synthetic Added</span><span class="metric-value" style="color:var(--accent-blue)">25,210</span></div>
+        <div style="margin-top:16px;padding:12px;background:var(--accent-green-dim);border-radius:var(--radius-sm);font-size:12px;color:var(--accent-green);border:1px solid rgba(16,185,129,.2)">
+          Leakage-safe: SMOTE applied on training data ONLY. Test set untouched.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MTD Simulation -->
+  <div id="simulation" class="section">
+    <div class="section-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+      Moving Target Defense Simulation
+    </div>
+    <div class="sim-panel animate-in delay-1">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+        <span class="live-dot"></span>
+        <span style="font-size:13px;font-weight:600;color:var(--accent-green)">LIVE SIMULATION</span>
+      </div>
+      <p style="font-size:13px;color:var(--text-secondary);margin-bottom:16px">Synthetic defense telemetry injected for training. These features model real-time Shadow Node interactions and MTD port rotation deltas absent from raw CICIDS2017.</p>
+      <div class="sim-grid">
+        <div class="sim-stat">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Shadow Node Hit Rate</div>
+          <div class="sim-stat-value" style="color:var(--accent-purple)">9.2%</div>
+          <div style="font-size:11px;color:var(--text-muted)">26,372 / 286,096 flows</div>
+        </div>
+        <div class="sim-stat">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">PortScan Interaction</div>
+          <div class="sim-stat-value" style="color:var(--accent-cyan)">15.0%</div>
+          <div style="font-size:11px;color:var(--text-muted)">Scanners hitting Scapy decoys</div>
+        </div>
+        <div class="sim-stat">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">BENIGN Interaction</div>
+          <div class="sim-stat-value" style="color:var(--accent-green)">2.0%</div>
+          <div style="font-size:11px;color:var(--text-muted)">Normal traffic decoy contact</div>
+        </div>
+        <div class="sim-stat">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">MTD Port Delta Range</div>
+          <div class="sim-stat-value" style="color:var(--accent-amber)">0 - 1023</div>
+          <div style="font-size:11px;color:var(--text-muted)">Port rotation offset (scanners)</div>
+        </div>
+        <div class="sim-stat">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">Benign Delta Range</div>
+          <div class="sim-stat-value" style="color:var(--accent-green)">0 - 127</div>
+          <div style="font-size:11px;color:var(--text-muted)">Narrow offset for normal traffic</div>
+        </div>
+        <div class="sim-stat">
+          <div style="font-size:11px;color:var(--text-muted);text-transform:uppercase;letter-spacing:.05em">MTD Feature Rank</div>
+          <div class="sim-stat-value" style="color:var(--accent-red)">#6</div>
+          <div style="font-size:11px;color:var(--text-muted)">Importance: 0.0641</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Dataset Info -->
+  <div id="dataset" class="section">
+    <div class="section-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"/><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"/><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"/></svg>
+      Dataset Information
+    </div>
+    <div class="grid grid-3">
+      <div class="card animate-in delay-1">
+        <div class="card-header"><div class="card-title">Source</div></div>
+        <div class="metric-row"><span class="metric-label">Dataset</span><span class="metric-value" style="color:var(--accent-cyan);font-size:13px">CICIDS2017</span></div>
+        <div class="metric-row"><span class="metric-label">Capture</span><span class="metric-value" style="color:var(--accent-blue);font-size:13px">Friday-WorkingHours</span></div>
+        <div class="metric-row"><span class="metric-label">Category</span><span class="metric-value" style="color:var(--accent-amber);font-size:13px">Afternoon-PortScan</span></div>
+        <div class="metric-row"><span class="metric-label">Raw Rows</span><span class="metric-value" style="color:var(--text-primary);font-size:13px">286,467</span></div>
+        <div class="metric-row"><span class="metric-label">Raw Columns</span><span class="metric-value" style="color:var(--text-primary);font-size:13px">79</span></div>
+      </div>
+      <div class="card animate-in delay-2">
+        <div class="card-header"><div class="card-title">Class Distribution</div></div>
+        <div class="chart-wrap" style="min-height:200px"><canvas id="classDistChart"></canvas></div>
+      </div>
+      <div class="card animate-in delay-3">
+        <div class="card-header"><div class="card-title">Pipeline Stats</div></div>
+        <div class="metric-row"><span class="metric-label">NaN/Inf Dropped</span><span class="metric-value" style="color:var(--accent-red)">371</span></div>
+        <div class="metric-row"><span class="metric-label">Clean Rows</span><span class="metric-value" style="color:var(--accent-green)">286,096</span></div>
+        <div class="metric-row"><span class="metric-label">Engineered Feats</span><span class="metric-value" style="color:var(--accent-cyan)">46</span></div>
+        <div class="metric-row"><span class="metric-label">Synthetic Feats</span><span class="metric-value" style="color:var(--accent-purple)">2</span></div>
+        <div class="metric-row"><span class="metric-label">Final Features</span><span class="metric-value" style="color:var(--accent-blue)">48</span></div>
+        <div class="metric-row"><span class="metric-label">Test Split</span><span class="metric-value" style="color:var(--accent-amber)">20%</span></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Exported Artifacts -->
+  <div class="section">
+    <div class="section-title">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><path d="M7 10l5 5 5-5"/><path d="M12 15V3"/></svg>
+      Exported Artifacts
+    </div>
+    <div class="card animate-in delay-1">
+      <table class="data-table">
+        <thead><tr><th>File</th><th>Type</th><th>Description</th><th>Status</th></tr></thead>
+        <tbody>
+          <tr><td class="mono">random_forest_model.joblib</td><td>Model</td><td>Trained Random Forest (300 estimators, balanced)</td><td><span class="tag tag-pass">&#10003; Saved</span></td></tr>
+          <tr><td class="mono">xgboost_model.joblib</td><td>Model</td><td>Trained XGBoost (300 estimators, lr=0.1)</td><td><span class="tag tag-pass">&#10003; Saved</span></td></tr>
+          <tr><td class="mono">feature_scaler.joblib</td><td>Preprocessor</td><td>Fitted StandardScaler (48 features)</td><td><span class="tag tag-pass">&#10003; Saved</span></td></tr>
+          <tr><td class="mono">evaluation_metrics.json</td><td>Metrics</td><td>Full evaluation metrics for both models</td><td><span class="tag tag-pass">&#10003; Saved</span></td></tr>
+          <tr><td class="mono">feature_names.json</td><td>Schema</td><td>48-feature schema definition</td><td><span class="tag tag-pass">&#10003; Saved</span></td></tr>
+          <tr><td class="mono">X_test.npy / y_test.npy</td><td>Data</td><td>Held-out test split (57,220 samples)</td><td><span class="tag tag-pass">&#10003; Saved</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+// Sidebar toggle
+function toggleSidebar(){
+  document.getElementById('sidebar').classList.toggle('open');
+  document.getElementById('overlay').classList.toggle('active');
+}
+
+// Active nav on scroll
+const sections = document.querySelectorAll('[id]');
+const navItems = document.querySelectorAll('.nav-item');
+window.addEventListener('scroll',()=>{
+  let current='';
+  sections.forEach(s=>{if(window.scrollY>=s.offsetTop-200)current=s.id});
+  navItems.forEach(n=>{
+    n.classList.remove('active');
+    if(n.getAttribute('href')==='#'+current)n.classList.add('active');
+  });
+});
+
+// Chart.js defaults
+Chart.defaults.color='#94a3b8';
+Chart.defaults.font.family="'Inter',sans-serif";
+Chart.defaults.font.size=12;
+Chart.defaults.plugins.legend.labels.usePointStyle=true;
+Chart.defaults.plugins.legend.labels.pointStyleWidth=8;
+
+// Feature Importance Chart
+new Chart(document.getElementById('featureChart'),{
+  type:'bar',
+  data:{
+    labels:['Subflow Fwd Bytes','Avg Fwd Seg Size','Fwd Pkt Len Max','Pkt Len Mean','Avg Pkt Size','MTD Port Delta','Fwd Pkt Len Mean','Bwd Pkts/s','PSH Flag Count','Max Pkt Len'],
+    datasets:[{
+      label:'Importance',
+      data:[0.1378,0.0994,0.0878,0.0703,0.0658,0.0641,0.0632,0.0430,0.0414,0.0384],
+      backgroundColor:['rgba(16,185,129,.7)','rgba(6,182,212,.7)','rgba(59,130,246,.7)','rgba(139,92,246,.7)','rgba(245,158,11,.7)','rgba(239,68,68,.7)','rgba(6,182,212,.5)','rgba(59,130,246,.5)','rgba(139,92,246,.5)','rgba(245,158,11,.5)'],
+      borderRadius:6,
+      barThickness:20
+    }]
+  },
+  options:{
+    indexAxis:'y',
+    responsive:true,
+    maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1f35',borderColor:'#2a3152',borderWidth:1,titleFont:{weight:'600'},bodyFont:{family:"'JetBrains Mono',monospace"},callbacks:{label:ctx=>`Importance: ${ctx.parsed.x.toFixed(4)}`}}},
+    scales:{x:{grid:{color:'rgba(42,49,82,.5)'},ticks:{font:{family:"'JetBrains Mono',monospace"}}},y:{grid:{display:false},ticks:{font:{size:11}}}}
+  }
+});
+
+// SMOTE Before Chart
+new Chart(document.getElementById('smoteBeforeChart'),{
+  type:'doughnut',
+  data:{
+    labels:['PortScan (y=1)','BENIGN (y=0)'],
+    datasets:[{data:[127043,101833],backgroundColor:['rgba(6,182,212,.8)','rgba(100,116,139,.5)'],borderWidth:0,hoverOffset:8}]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,cutout:'60%',
+    plugins:{legend:{position:'bottom',labels:{padding:12,font:{size:12}}}}
+  }
+});
+
+// SMOTE After Chart
+new Chart(document.getElementById('smoteAfterChart'),{
+  type:'doughnut',
+  data:{
+    labels:['PortScan (y=1)','BENIGN (y=0)'],
+    datasets:[{data:[127043,127043],backgroundColor:['rgba(6,182,212,.8)','rgba(16,185,129,.8)'],borderWidth:0,hoverOffset:8}]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,cutout:'60%',
+    plugins:{legend:{position:'bottom',labels:{padding:12,font:{size:12}}}}
+  }
+});
+
+// Class Distribution Chart
+new Chart(document.getElementById('classDistChart'),{
+  type:'bar',
+  data:{
+    labels:['PortScan','BENIGN'],
+    datasets:[{
+      label:'Flow Count',
+      data:[158804,127292],
+      backgroundColor:['rgba(6,182,212,.7)','rgba(100,116,139,.5)'],
+      borderRadius:8,
+      barThickness:48
+    }]
+  },
+  options:{
+    responsive:true,maintainAspectRatio:false,
+    plugins:{legend:{display:false},tooltip:{backgroundColor:'#1a1f35',borderColor:'#2a3152',borderWidth:1}},
+    scales:{y:{grid:{color:'rgba(42,49,82,.5)'},ticks:{font:{family:"'JetBrains Mono',monospace"}}},x:{grid:{display:false}}}
+  }
+});
+</script>
+</body>
+</html>

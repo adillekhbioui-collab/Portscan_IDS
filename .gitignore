@@ -1,47 +1,17 @@
-# ============================================
-# AEGIS Project — .gitignore
-# ============================================
+# Large dataset files
+capture/raw_datasets/
+aegis_submission/
+raw_datasets/
 
-# --- Datasets (too large for GitHub) ---
-data/*.csv
-data/*.pcap
-data/*.parquet
-data/*.h5
-
-# --- Trained models (large .pkl files) ---
-# NOTE: We DO push models/saved/*.pkl (small enough)
-# But raw training artifacts are excluded:
-models/checkpoints/
-models/*.log
-
-# --- Python ---
+# Python cache
 __pycache__/
 *.pyc
 *.pyo
-*.egg-info/
-dist/
-build/
-venv/
-env/
-.env
 
-# --- IDE ---
-.vscode/
-.idea/
-*.swp
-*.swo
+# Temp files
+.token.txt
+*.tmp
 
-# --- OS ---
+# OS files
 .DS_Store
 Thumbs.db
-desktop.ini
-
-# --- Jupyter (if used for EDA) ---
-.ipynb_checkpoints/
-
-# --- Logs ---
-logs/*.log
-*.log
-
-detection/results/predictions_rf.csv
-detection/data/
