@@ -1,0 +1,866 @@
+\documentclass[12pt,a4paper]{report}
+
+% =========================
+% Packages
+% =========================
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[french]{babel}
+\usepackage{lmodern}
+\usepackage{geometry}
+\usepackage{graphicx}
+\usepackage{float}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage[table]{xcolor}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{hyperref}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{lastpage}
+\usetikzlibrary{positioning,arrows.meta,shapes.geometric}
+
+% =========================
+% Mise en page
+% =========================
+\geometry{left=2.2cm,right=2.2cm,top=2.4cm,bottom=2.4cm}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.65em}
+\renewcommand{\arraystretch}{1.25}
+\setlist[itemize]{topsep=0.2em,itemsep=0.2em}
+\setlist[enumerate]{topsep=0.2em,itemsep=0.25em}
+
+% =========================
+% Couleurs
+% =========================
+\definecolor{MainBlue}{HTML}{1F4E79}
+\definecolor{LightBlue}{HTML}{D9EAF7}
+\definecolor{LightGray}{HTML}{F2F2F2}
+\definecolor{DarkGray}{HTML}{333333}
+\definecolor{TerminalBg}{HTML}{F7F7F7}
+
+% =========================
+% Liens et en-tetes
+% =========================
+\hypersetup{
+    colorlinks=true,
+    linkcolor=MainBlue,
+    urlcolor=MainBlue,
+    citecolor=MainBlue,
+    pdftitle={Rapport technique - Mise en place du laboratoire VirtualBox et simulations Nmap},
+    pdfauthor={A completer}
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\lhead{Projet IA - Cybersécurité}
+\rhead{Laboratoire VirtualBox}
+\cfoot{Page \thepage\ / \pageref{LastPage}}
+\setlength{\headheight}{15pt}
+
+\titleformat{\chapter}{\normalfont\Huge\bfseries\color{MainBlue}}{\thechapter.}{0.6em}{}
+\titleformat{\section}{\normalfont\Large\bfseries\color{MainBlue}}{\thesection}{0.6em}{}
+\titleformat{\subsection}{\normalfont\large\bfseries\color{DarkGray}}{\thesubsection}{0.6em}{}
+
+% =========================
+% Commandes utiles
+% =========================
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+\newcommand{\safeimage}[2][]{\includegraphics[#1]{\detokenize{#2}}}
+
+\lstdefinestyle{terminal}{
+    backgroundcolor=\color{TerminalBg},
+    basicstyle=\ttfamily\small,
+    frame=single,
+    breaklines=true,
+    columns=fullflexible,
+    keepspaces=true,
+    showstringspaces=false,
+    rulecolor=\color{LightGray},
+    xleftmargin=0.2cm,
+    xrightmargin=0.2cm
+}
+
+% =========================
+% Informations du rapport
+% =========================
+\newcommand{\NomProjet}{Projet IA - Cybersécurité}
+\newcommand{\SujetProjet}{Détection et réponse automatisée aux scans de ports}
+\newcommand{\AuteurRapport}{Moulay Anas}
+\newcommand{\DateRapport}{\today}
+
+\begin{document}
+
+% =========================
+% Page de garde
+% =========================
+\begin{titlepage}
+    \centering
+    \vspace*{1.5cm}
+
+    {\Huge\bfseries\color{MainBlue} Rapport technique\\[0.35cm]}
+    {\Large Mise en place du laboratoire VirtualBox, architecture réseau et simulations Nmap\\[1.2cm]}
+
+    \rule{0.85\textwidth}{0.5pt}\\[0.6cm]
+    {\Large\bfseries \NomProjet\\[0.2cm]}
+    {\large \SujetProjet\\[0.6cm]}
+    \rule{0.85\textwidth}{0.5pt}
+
+    \vfill
+
+    \begin{tabular}{L{5cm}L{8cm}}
+        \textbf{Auteur :} & \AuteurRapport \\
+        \textbf{Environnement :} & Oracle VirtualBox, Kali Linux, Ubuntu Victime \\
+        \textbf{Réseau de test :} & \code{lab-cyber} - \code{192.168.100.0/24} \\
+        \textbf{Date :} & \DateRapport \\
+    \end{tabular}
+
+    \vfill
+
+    \begin{minipage}{0.86\textwidth}
+        \centering
+        \small
+        Ce rapport présente la partie infrastructure du projet : création et configuration des machines virtuelles, isolation du réseau de laboratoire, vérification de la connectivité, génération des rapports Nmap et interprétation des résultats obtenus.
+    \end{minipage}
+\end{titlepage}
+
+\tableofcontents
+\listoffigures
+\listoftables
+\newpage
+
+% =========================
+% Chapitre 1
+% =========================
+\chapter{Introduction}
+
+\section{Contexte général}
+Ce travail s'inscrit dans un projet de cybersécurité orienté vers la détection et la réponse automatisée aux scans de ports. Avant de pouvoir entraîner, tester ou valider un module de détection, il est nécessaire de disposer d'un environnement contrôlé dans lequel un trafic de reconnaissance peut être produit de manière volontaire et reproductible.
+
+La partie présentée dans ce rapport concerne donc la mise en place du laboratoire technique. Elle couvre la préparation de deux machines virtuelles, la séparation entre accès Internet et réseau d'attaque interne, la vérification des adresses IP, puis l'exécution de plusieurs scénarios Nmap depuis la machine attaquante vers la machine victime.
+
+\section{Objectif de cette partie}
+L'objectif principal est de construire une base fiable pour les autres parties du projet. Cette base doit permettre de :
+\begin{itemize}
+    \item disposer d'une machine attaquante capable de lancer des scans Nmap ;
+    \item disposer d'une machine victime exposant des services réseau identifiables ;
+    \item isoler les échanges d'attaque dans un réseau interne VirtualBox ;
+    \item produire des rapports de scan exploitables par un humain, un script, un tableau de bord ou un module d'intelligence artificielle ;
+    \item documenter précisément les commandes, les durées, les résultats et les limites de l'expérimentation.
+\end{itemize}
+
+\section{Périmètre du rapport}
+Ce rapport ne traite pas de l'entraînement complet du modèle d'intelligence artificielle ni de l'implémentation finale d'un système d'alerte. Il se concentre sur la partie infrastructure : machines virtuelles, réseau, génération de trafic de reconnaissance et production des fichiers de résultats.
+
+Les tests ont été réalisés dans un laboratoire local et isolé. Les scans ont été lancés uniquement depuis la machine Kali Linux vers la machine Ubuntu Victime, toutes deux placées sur le réseau interne \code{lab-cyber}.
+
+% =========================
+% Chapitre 2
+% =========================
+\chapter{Environnement de virtualisation}
+
+\section{Vue d'ensemble VirtualBox}
+L'environnement de travail repose sur Oracle VirtualBox. Deux machines virtuelles sont utilisées : une machine Kali Linux jouant le rôle d'attaquant et une machine Ubuntu jouant le rôle de victime. La figure \ref{fig:vbox-global} montre la vue globale du gestionnaire VirtualBox avec les deux machines du laboratoire.
+
+\begin{figure}[H]
+    \centering
+    \safeimage[width=0.95\linewidth]{image/image (1).png}
+    \caption{Vue générale du gestionnaire VirtualBox avec les deux machines virtuelles du laboratoire. Fichier source : \code{image (1).png}.}
+    \label{fig:vbox-global}
+\end{figure}
+
+\section{Machine attaquante : Kali Linux}
+La machine Kali Linux est utilisée comme source des scans. Elle dispose de deux interfaces réseau : une interface NAT pour l'accès extérieur si nécessaire, et une interface placée dans le réseau interne \code{lab-cyber} pour communiquer directement avec la victime.
+
+\begin{figure}[H]
+    \centering
+    \safeimage[width=0.68\linewidth]{image/image (2).png}
+    \caption{Configuration VirtualBox de la machine Kali Linux attaquante. Fichier source : \code{image (2).png}.}
+    \label{fig:kali-vbox}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Paramètres principaux de la machine Kali Linux}
+\label{tab:kali-vbox}
+\begin{tabularx}{\textwidth}{L{4.5cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Élément} & \color{white}\textbf{Valeur} \\
+\midrule
+Nom de la machine & \code{kali-linux-2026.1-virtualbox-amd64} \\
+Système déclaré & Debian 64 bits \\
+Rôle & Machine attaquante, source des scans Nmap \\
+Mémoire vive & 2048 Mo \\
+Processeurs & 2 \\
+Stockage & Disque virtuel \code{kali-linux-2026.1-virtualbox-amd64.vdi}, environ 80,09 Gio \\
+Interface 1 & NAT, utilisée pour l'accès réseau externe si nécessaire \\
+Interface 2 & Réseau interne VirtualBox \code{lab-cyber}, utilisée pour les scans \\
+Contrôleur graphique & VMSVGA \\
+Mémoire vidéo & 128 Mo \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Machine victime : Ubuntu Victime}
+La machine Ubuntu Victime représente la cible des scans. Elle est volontairement placée sur le même réseau interne que Kali pour permettre les tests de reconnaissance. Elle conserve également une interface NAT séparée, qui n'est pas utilisée pour les scans.
+
+\begin{figure}[H]
+    \centering
+    \safeimage[width=0.68\linewidth]{image/image (3).png}
+    \caption{Configuration VirtualBox de la machine Ubuntu Victime. Fichier source : \code{image (3).png}.}
+    \label{fig:ubuntu-vbox}
+\end{figure}
+
+\begin{table}[H]
+\centering
+\caption{Paramètres principaux de la machine Ubuntu Victime}
+\label{tab:ubuntu-vbox}
+\begin{tabularx}{\textwidth}{L{4.5cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Élément} & \color{white}\textbf{Valeur} \\
+\midrule
+Nom de la machine & \code{Ubuntu Victime} \\
+Système déclaré & Ubuntu 25.04, 64 bits \\
+Rôle & Machine cible, réception des scans Nmap \\
+Mémoire vive & 4096 Mo \\
+Processeurs & 2 \\
+Stockage & Disque virtuel \code{Ubuntu Victime.vdi}, environ 25,00 Gio \\
+Interface 1 & NAT, utilisée pour l'accès Internet de la VM \\
+Interface 2 & Réseau interne VirtualBox \code{lab-cyber}, utilisée comme interface cible \\
+Contrôleur graphique & VMSVGA \\
+Mémoire vidéo & 16 Mo \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Principe de séparation réseau}
+La configuration utilise deux types d'interfaces. L'interface NAT permet aux machines d'accéder à l'extérieur du laboratoire lorsque c'est nécessaire. Le réseau interne \code{lab-cyber} sert uniquement à la communication entre l'attaquant et la victime. Cette séparation est importante, car elle évite de mélanger le trafic de test avec le trafic externe.
+
+Dans les simulations, les paquets de reconnaissance Nmap passent par le réseau interne et non par l'interface NAT. Le trafic d'attaque reste donc limité au laboratoire virtuel.
+
+% =========================
+% Chapitre 3
+% =========================
+\chapter{Architecture réseau du laboratoire}
+
+\section{Topologie logique}
+La topologie est composée de deux machines reliées par le réseau interne VirtualBox \code{lab-cyber}. Le plan d'adressage utilisé est \code{192.168.100.0/24}. La machine Kali possède l'adresse \code{192.168.100.10/24} sur son interface interne, tandis que la machine Ubuntu Victime possède l'adresse \code{192.168.100.20/24} sur son interface interne.
+
+\begin{figure}[H]
+\centering
+\begin{tikzpicture}[
+    node distance=2.2cm,
+    vm/.style={draw, rounded corners, thick, minimum width=4.2cm, minimum height=1.6cm, align=center, fill=LightGray},
+    net/.style={draw, rounded corners, thick, minimum width=4.4cm, minimum height=1.3cm, align=center, fill=LightBlue},
+    arrow/.style={-{Latex[length=3mm]}, thick}
+]
+    \node[vm] (kali) {\textbf{Kali Linux}\\eth1 : 192.168.100.10/24\\Rôle : attaquant};
+    \node[net, right=2.2cm of kali] (lab) {\textbf{lab-cyber}\\192.168.100.0/24};
+    \node[vm, right=2.2cm of lab] (ubuntu) {\textbf{Ubuntu Victime}\\enp0s8 : 192.168.100.20/24\\Rôle : cible};
+    \draw[thick] (kali) -- (lab);
+    \draw[thick] (lab) -- (ubuntu);
+\end{tikzpicture}
+\caption{Topologie logique du laboratoire de test.}
+\label{fig:topologie-logique}
+\end{figure}
+
+\section{Plan d'adressage}
+\begin{table}[H]
+\centering
+\caption{Plan d'adressage et rôle des interfaces}
+\label{tab:adressage}
+\begin{tabularx}{\textwidth}{L{3.4cm}L{2.7cm}L{3.1cm}L{3.3cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Machine} & \color{white}\textbf{Interface} & \color{white}\textbf{Adresse IP} & \color{white}\textbf{Mode VirtualBox} & \color{white}\textbf{Rôle} \\
+\midrule
+Kali Linux & eth1 & 192.168.100.10/24 & Réseau interne \code{lab-cyber} & Source des scans Nmap \\
+Ubuntu Victime & enp0s8 & 192.168.100.20/24 & Réseau interne \code{lab-cyber} & Cible des scans Nmap \\
+Ubuntu Victime & enp0s3 & 10.0.2.15/24 & NAT & Accès Internet de la VM, non utilisé pour les scans \\
+Kali Linux & eth0 & NAT & NAT & Accès extérieur éventuel, non utilisé pour les scans \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Vérification des interfaces sur Ubuntu Victime}
+La commande \code{ip -br a} permet de vérifier rapidement l'état des interfaces réseau. Sur Ubuntu Victime, l'interface \code{enp0s3} est associée au NAT avec l'adresse \code{10.0.2.15/24}, tandis que l'interface \code{enp0s8} est associée au réseau interne avec l'adresse \code{192.168.100.20/24}.
+
+\begin{figure}[H]
+    \centering
+    \safeimage[width=0.78\linewidth]{image/image (4).png}
+    \caption{Vérification des interfaces réseau sur Ubuntu Victime avec \code{ip -br a}. Fichier source : \code{image (4).png}.}
+    \label{fig:ubuntu-ip}
+\end{figure}
+
+\section{Vérification des interfaces sur Kali Linux}
+Sur Kali Linux, la commande \code{ip -br a} montre l'interface \code{eth1} active sur le réseau interne avec l'adresse \code{192.168.100.10/24}. Cette interface est utilisée comme source des scans vers la victime.
+
+\begin{figure}[H]
+    \centering
+    \safeimage[width=0.78\linewidth]{image/image (5).png}
+    \caption{Vérification des interfaces réseau sur Kali Linux avec \code{ip -br a}. Fichier source : \code{image (5).png}.}
+    \label{fig:kali-ip}
+\end{figure}
+
+\section{Flux de communication utilisé pour les scans}
+Le flux principal de test est le suivant :
+\begin{center}
+\code{192.168.100.10} \quad $\longrightarrow$ \quad \code{192.168.100.20}
+\end{center}
+
+La machine Kali Linux envoie les paquets de reconnaissance vers Ubuntu Victime. La victime répond selon l'état de ses ports et services. Ces réponses sont ensuite interprétées par Nmap pour produire les rapports de scan.
+
+% =========================
+% Chapitre 4
+% =========================
+\chapter{Préparation des fichiers de scan}
+
+\section{Répertoire de travail}
+Les rapports Nmap sont organisés dans un répertoire dédié, par exemple \code{/home/kali/scans}. Cette organisation permet de garder un nommage clair pour chaque scénario et de générer automatiquement les trois formats de sortie associés à chaque scan.
+
+\begin{lstlisting}[style=terminal,caption={Préparation possible du répertoire de scans sur Kali Linux}]
+mkdir -p ~/scans
+cd ~/scans
+\end{lstlisting}
+
+\section{Principe de l'option Nmap -oA}
+L'option \code{-oA} de Nmap génère automatiquement trois fichiers à partir d'un même scan :
+\begin{itemize}
+    \item un fichier \code{.nmap}, lisible directement par un humain ;
+    \item un fichier \code{.xml}, structuré et exploitable par un script, un tableau de bord ou un module d'analyse ;
+    \item un fichier \code{.gnmap}, au format grepable, pratique pour filtrer rapidement les résultats.
+\end{itemize}
+
+Dans ce projet, dix scénarios de scan ont été exécutés. Chaque scénario a produit trois fichiers, soit trente fichiers de résultats au total.
+
+\begin{table}[H]
+\centering
+\caption{Formats de sortie produits par Nmap}
+\label{tab:formats}
+\begin{tabularx}{\textwidth}{L{2.4cm}L{3cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Format} & \color{white}\textbf{Nombre} & \color{white}\textbf{Utilité} \\
+\midrule
+\code{.nmap} & 10 & Rapport lisible par humain : ports, services, état de la cible, durée du scan. \\
+\code{.xml} & 10 & Rapport structuré : utile pour le parsing automatique, le tableau de bord ou le module IA. \\
+\code{.gnmap} & 10 & Rapport grepable : utile pour des recherches rapides avec des commandes de filtrage. \\
+\code{.pcap} & 0 & Aucune capture brute n'est présente dans l'archive de résultats. Ce format resterait utile pour une analyse réseau plus fine avec Wireshark ou tcpdump. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Commandes Nmap exécutées}
+Les dix commandes suivantes couvrent plusieurs comportements : scan SYN classique, scan complet TCP, détection de services, détection d'OS, scan agressif, scan UDP, scan XMAS, scan lent, scan rapide et scan très rapide.
+
+\begin{lstlisting}[style=terminal,caption={Commandes Nmap utilisées dans le laboratoire}]
+nmap -sS -p 1-1000 -oA ~/scans/01_syn_scan 192.168.100.20
+nmap -sS -p- -oA ~/scans/02_full_tcp_scan 192.168.100.20
+nmap -sV -p 1-1000 -oA ~/scans/03_service_detection 192.168.100.20
+nmap -O -oA ~/scans/04_os_detection 192.168.100.20
+nmap -A -oA ~/scans/05_aggressive_scan 192.168.100.20
+nmap -sU --top-ports 50 -oA ~/scans/06_udp_scan 192.168.100.20
+nmap -sX -p 1-1000 -oA ~/scans/07_xmas_scan 192.168.100.20
+nmap -sS -p 1-1000 --scan-delay 500ms --max-rate 5 -oA ~/scans/08_slow_scan 192.168.100.20
+nmap -sS -T4 -p 1-1000 -oA ~/scans/09_fast_scan 192.168.100.20
+nmap -sS -T5 -p 1-1000 -oA ~/scans/10_very_fast_scan 192.168.100.20
+\end{lstlisting}
+
+% =========================
+% Chapitre 5
+% =========================
+\chapter{Synthèse des simulations Nmap}
+
+\section{Tableau récapitulatif}
+\begin{longtable}{L{3.1cm}L{6.0cm}L{2.0cm}L{4.5cm}}
+\caption{Synthèse des dix scans Nmap réalisés}\label{tab:synthese-scans}\\
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Test} & \color{white}\textbf{Commande principale} & \color{white}\textbf{Durée} & \color{white}\textbf{Résultat principal} \\
+\midrule
+\endfirsthead
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Test} & \color{white}\textbf{Commande principale} & \color{white}\textbf{Durée} & \color{white}\textbf{Résultat principal} \\
+\midrule
+\endhead
+Scan TCP SYN & \code{nmap -sS -p 1-1000 -oA ~/scans/01_syn_scan 192.168.100.20} & 4,67 s & 22/tcp ouvert SSH ; 80/tcp ouvert HTTP \\
+Scan complet TCP & \code{nmap -sS -p- -oA ~/scans/02_full_tcp_scan 192.168.100.20} & 6,24 s & 22/tcp ouvert SSH ; 80/tcp ouvert HTTP \\
+Détection de services & \code{nmap -sV -p 1-1000 -oA ~/scans/03_service_detection 192.168.100.20} & 10,91 s & OpenSSH 10.2p1 et Apache httpd 2.4.66 \\
+Détection OS & \code{nmap -O -oA ~/scans/04_os_detection 192.168.100.20} & 15,96 s & Pas de correspondance OS exacte ; distance réseau : 1 saut \\
+Scan agressif & \code{nmap -A -oA ~/scans/05_aggressive_scan 192.168.100.20} & 22,41 s & Services détectés, titre HTTP Apache, traceroute local \\
+Scan UDP & \code{nmap -sU --top-ports 50 -oA ~/scans/06_udp_scan 192.168.100.20} & 20,47 s & Aucun port UDP confirmé ouvert ; plusieurs ports \code{open|filtered} \\
+Scan XMAS & \code{nmap -sX -p 1-1000 -oA ~/scans/07_xmas_scan 192.168.100.20} & 5,86 s & 22/tcp et 80/tcp apparaissent \code{open|filtered} \\
+Scan lent & \code{nmap -sS -p 1-1000 --scan-delay 500ms --max-rate 5 -oA ~/scans/08_slow_scan 192.168.100.20} & 505,83 s & 22/tcp ouvert SSH ; 80/tcp ouvert HTTP \\
+Scan rapide T4 & \code{nmap -sS -T4 -p 1-1000 -oA ~/scans/09_fast_scan 192.168.100.20} & 4,66 s & 22/tcp ouvert SSH ; 80/tcp ouvert HTTP \\
+Scan très rapide T5 & \code{nmap -sS -T5 -p 1-1000 -oA ~/scans/10_very_fast_scan 192.168.100.20} & 4,66 s & 22/tcp ouvert SSH ; 80/tcp ouvert HTTP \\
+\bottomrule
+\end{longtable}
+
+\section{Services identifiés sur la victime}
+Les scans TCP confirment de façon stable la présence de deux services ouverts sur Ubuntu Victime : SSH sur le port 22/tcp et HTTP sur le port 80/tcp.
+
+\begin{table}[H]
+\centering
+\caption{Services ouverts détectés sur Ubuntu Victime}
+\label{tab:services}
+\begin{tabularx}{\textwidth}{L{2.5cm}L{2.5cm}L{2.8cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Port} & \color{white}\textbf{État} & \color{white}\textbf{Service} & \color{white}\textbf{Détails observés} \\
+\midrule
+22/tcp & open & ssh & OpenSSH 10.2p1 Ubuntu 2ubuntu3.2, protocole 2.0 \\
+80/tcp & open & http & Apache httpd 2.4.66 sur Ubuntu ; page par défaut Apache détectée \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Interprétation générale}
+Les résultats montrent que la machine cible \code{192.168.100.20} est active et répond avec une latence très faible, ce qui est cohérent avec une topologie locale VirtualBox. Les scans TCP identifient toujours les ports 22/tcp et 80/tcp comme ouverts, ce qui confirme que la victime expose un service SSH et un service HTTP.
+
+La détection de services enrichit ces résultats en indiquant les versions observées : OpenSSH 10.2p1 côté SSH et Apache httpd 2.4.66 côté HTTP. Le scan agressif confirme également le titre de la page HTTP par défaut d'Apache.
+
+Le scan OS ne fournit pas de correspondance exacte pour le système d'exploitation, mais les informations de service et la connaissance de la topologie confirment que la cible correspond à une machine Linux/Ubuntu. Le scan UDP ne confirme aucun port UDP ouvert ; les ports marqués \code{open|filtered} indiquent que Nmap n'a pas reçu de réponse suffisante pour conclure clairement.
+
+Le scan lent dure 505,83 secondes. Il est important pour le projet, car il simule un comportement plus discret, appelé \textit{low-and-slow}. À l'inverse, les scans T4 et T5 produisent un trafic rapide et dense, intéressant pour tester la réactivité d'un futur système de détection.
+
+% =========================
+% Chapitre 6
+% =========================
+\chapter{Analyse détaillée des scénarios de scan}
+
+\section{Scan TCP SYN}
+Le scan TCP SYN est un scan classique de reconnaissance. Il teste les ports TCP de 1 à 1000 sans établir complètement une connexion applicative complète avec chaque service.
+
+\begin{table}[H]
+\centering
+\caption{Détail du scan TCP SYN}
+\begin{tabularx}{\textwidth}{L{4cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Élément} & \color{white}\textbf{Valeur} \\
+\midrule
+Fichier principal & \code{01_syn_scan.nmap} \\
+Commande & \code{nmap -sS -p 1-1000 -oA ~/scans/01_syn_scan 192.168.100.20} \\
+Objectif & Reconnaissance TCP classique sur les ports 1 à 1000. \\
+Cible & \code{192.168.100.20} \\
+Début & Sat Jun 13 10:59:19 2026 \\
+Fin & Sat Jun 13 10:59:24 2026 \\
+Durée & 4,67 secondes \\
+Latence & 0,00013 s \\
+Résultats & 22/tcp ouvert SSH ; 80/tcp ouvert HTTP \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Scan complet TCP}
+Le scan complet TCP élargit le périmètre en testant tous les ports TCP de 1 à 65535. Il permet de vérifier qu'aucun autre service TCP n'est exposé sur la victime.
+
+\begin{table}[H]
+\centering
+\caption{Détail du scan complet TCP}
+\begin{tabularx}{\textwidth}{L{4cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Élément} & \color{white}\textbf{Valeur} \\
+\midrule
+Fichier principal & \code{02_full_tcp_scan.nmap} \\
+Commande & \code{nmap -sS -p- -oA ~/scans/02_full_tcp_scan 192.168.100.20} \\
+Objectif & Recherche de services sur tous les ports TCP. \\
+Cible & \code{192.168.100.20} \\
+Début & Sat Jun 13 10:59:43 2026 \\
+Fin & Sat Jun 13 10:59:50 2026 \\
+Durée & 6,24 secondes \\
+Latence & 0,0022 s \\
+Résultats & 22/tcp ouvert SSH ; 80/tcp ouvert HTTP \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Détection de services}
+Ce scan ajoute l'option \code{-sV}. Il ne se contente pas de dire qu'un port est ouvert ; il tente aussi d'identifier le service et sa version.
+
+\begin{table}[H]
+\centering
+\caption{Détail du scan de détection de services}
+\begin{tabularx}{\textwidth}{L{4cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Élément} & \color{white}\textbf{Valeur} \\
+\midrule
+Fichier principal & \code{03_service_detection.nmap} \\
+Commande & \code{nmap -sV -p 1-1000 -oA ~/scans/03_service_detection 192.168.100.20} \\
+Objectif & Identifier les services et leurs versions. \\
+Cible & \code{192.168.100.20} \\
+Début & Sat Jun 13 10:59:55 2026 \\
+Fin & Sat Jun 13 11:00:06 2026 \\
+Durée & 10,91 secondes \\
+Latence & 0,00012 s \\
+Résultats & 22/tcp : OpenSSH 10.2p1 Ubuntu 2ubuntu3.2 ; 80/tcp : Apache httpd 2.4.66 \\
+Information complémentaire & Le service info indique un système Linux. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Détection du système d'exploitation}
+L'option \code{-O} demande à Nmap de tenter une identification du système d'exploitation. Dans ce cas, aucune correspondance exacte n'a été trouvée, mais Nmap indique une distance réseau de 1 saut, ce qui correspond à la communication directe dans le réseau interne.
+
+\begin{table}[H]
+\centering
+\caption{Détail du scan de détection OS}
+\begin{tabularx}{\textwidth}{L{4cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Élément} & \color{white}\textbf{Valeur} \\
+\midrule
+Fichier principal & \code{04_os_detection.nmap} \\
+Commande & \code{nmap -O -oA ~/scans/04_os_detection 192.168.100.20} \\
+Objectif & Tentative d'identification du système d'exploitation de la cible. \\
+Cible & \code{192.168.100.20} \\
+Début & Sat Jun 13 11:00:09 2026 \\
+Fin & Sat Jun 13 11:00:24 2026 \\
+Durée & 15,96 secondes \\
+Latence & 0,00023 s \\
+Résultats & 22/tcp ouvert SSH ; 80/tcp ouvert HTTP \\
+Information complémentaire & Pas de correspondance exacte pour l'OS ; distance réseau : 1 saut. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Scan agressif}
+Le scan agressif combine plusieurs fonctions : détection de versions, scripts de base, tentative de détection OS et traceroute. Il est plus complet, mais aussi plus visible.
+
+\begin{table}[H]
+\centering
+\caption{Détail du scan agressif}
+\begin{tabularx}{\textwidth}{L{4cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Élément} & \color{white}\textbf{Valeur} \\
+\midrule
+Fichier principal & \code{05_aggressive_scan.nmap} \\
+Commande & \code{nmap -A -oA ~/scans/05_aggressive_scan 192.168.100.20} \\
+Objectif & Combiner services, OS, scripts de base et traceroute. \\
+Cible & \code{192.168.100.20} \\
+Début & Sat Jun 13 11:00:36 2026 \\
+Fin & Sat Jun 13 11:00:58 2026 \\
+Durée & 22,41 secondes \\
+Latence & 0,00020 s \\
+Résultats & 22/tcp : OpenSSH 10.2p1 ; 80/tcp : Apache httpd 2.4.66 \\
+Information complémentaire & Titre HTTP détecté : Apache2 Ubuntu Default Page ; distance réseau : 1 saut. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Scan UDP}
+Le scan UDP cible les 50 ports UDP les plus fréquents. Les résultats indiquent plusieurs ports fermés et 30 ports \code{open|filtered}. Aucun port UDP n'est confirmé ouvert.
+
+\begin{table}[H]
+\centering
+\caption{Détail du scan UDP}
+\begin{tabularx}{\textwidth}{L{4cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Élément} & \color{white}\textbf{Valeur} \\
+\midrule
+Fichier principal & \code{06_udp_scan.nmap} \\
+Commande & \code{nmap -sU --top-ports 50 -oA ~/scans/06_udp_scan 192.168.100.20} \\
+Objectif & Reconnaissance sur les 50 ports UDP les plus fréquents. \\
+Cible & \code{192.168.100.20} \\
+Début & Sat Jun 13 11:01:02 2026 \\
+Fin & Sat Jun 13 11:01:22 2026 \\
+Durée & 20,47 secondes \\
+Latence & 0,00027 s \\
+Résultats & 30 ports UDP \code{open|filtered} ; 20 ports UDP fermés listés. \\
+Conclusion & Aucun port UDP n'est confirmé ouvert. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Scan XMAS}
+Le scan XMAS est une technique TCP atypique qui envoie des paquets avec des drapeaux particuliers. Les ports 22/tcp et 80/tcp apparaissent ici comme \code{open|filtered}, ce qui signifie que Nmap ne peut pas conclure de manière aussi directe qu'avec un scan SYN classique.
+
+\begin{table}[H]
+\centering
+\caption{Détail du scan XMAS}
+\begin{tabularx}{\textwidth}{L{4cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Élément} & \color{white}\textbf{Valeur} \\
+\midrule
+Fichier principal & \code{07_xmas_scan.nmap} \\
+Commande & \code{nmap -sX -p 1-1000 -oA ~/scans/07_xmas_scan 192.168.100.20} \\
+Objectif & Tester une technique TCP atypique via des drapeaux spéciaux. \\
+Cible & \code{192.168.100.20} \\
+Début & Sat Jun 13 11:01:27 2026 \\
+Fin & Sat Jun 13 11:01:33 2026 \\
+Durée & 5,86 secondes \\
+Latence & 0,00015 s \\
+Résultats & 22/tcp \code{open|filtered} SSH ; 80/tcp \code{open|filtered} HTTP. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Scan lent}
+Le scan lent ajoute un délai et limite le débit avec \code{--scan-delay 500ms} et \code{--max-rate 5}. Ce scénario est important, car un attaquant peut volontairement ralentir un scan pour réduire sa visibilité.
+
+\begin{table}[H]
+\centering
+\caption{Détail du scan lent}
+\begin{tabularx}{\textwidth}{L{4cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Élément} & \color{white}\textbf{Valeur} \\
+\midrule
+Fichier principal & \code{08_slow_scan.nmap} \\
+Commande & \code{nmap -sS -p 1-1000 --scan-delay 500ms --max-rate 5 -oA ~/scans/08_slow_scan 192.168.100.20} \\
+Objectif & Simuler un comportement \textit{low-and-slow}. \\
+Cible & \code{192.168.100.20} \\
+Début & Sat Jun 13 11:01:36 2026 \\
+Fin & Sat Jun 13 11:10:02 2026 \\
+Durée & 505,83 secondes \\
+Latence & 0,00032 s \\
+Résultats & 22/tcp ouvert SSH ; 80/tcp ouvert HTTP. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Scan rapide T4}
+Le scan T4 utilise un profil de timing rapide. Il sert à générer un trafic plus dense et plus facilement détectable par un système de surveillance.
+
+\begin{table}[H]
+\centering
+\caption{Détail du scan rapide T4}
+\begin{tabularx}{\textwidth}{L{4cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Élément} & \color{white}\textbf{Valeur} \\
+\midrule
+Fichier principal & \code{09_fast_scan.nmap} \\
+Commande & \code{nmap -sS -T4 -p 1-1000 -oA ~/scans/09_fast_scan 192.168.100.20} \\
+Objectif & Générer une reconnaissance SYN rapide. \\
+Cible & \code{192.168.100.20} \\
+Début & Sat Jun 13 11:11:23 2026 \\
+Fin & Sat Jun 13 11:11:28 2026 \\
+Durée & 4,66 secondes \\
+Latence & 0,0058 s \\
+Résultats & 22/tcp ouvert SSH ; 80/tcp ouvert HTTP. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Scan très rapide T5}
+Le scan T5 utilise un profil de timing très agressif. Il est utile pour tester un scénario bruyant et rapide, dans lequel un système de détection doit réagir en très peu de temps.
+
+\begin{table}[H]
+\centering
+\caption{Détail du scan très rapide T5}
+\begin{tabularx}{\textwidth}{L{4cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Élément} & \color{white}\textbf{Valeur} \\
+\midrule
+Fichier principal & \code{10_very_fast_scan.nmap} \\
+Commande & \code{nmap -sS -T5 -p 1-1000 -oA ~/scans/10_very_fast_scan 192.168.100.20} \\
+Objectif & Générer une reconnaissance SYN très rapide et bruyante. \\
+Cible & \code{192.168.100.20} \\
+Début & Sat Jun 13 11:11:49 2026 \\
+Fin & Sat Jun 13 11:11:54 2026 \\
+Durée & 4,66 secondes \\
+Latence & 0,00010 s \\
+Résultats & 22/tcp ouvert SSH ; 80/tcp ouvert HTTP. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+% =========================
+% Chapitre 7
+% =========================
+\chapter{Lien avec le module IA de détection}
+
+\section{Rôle des scans dans le projet}
+Les scans Nmap ne constituent pas seulement une étape de reconnaissance manuelle. Ils servent aussi à produire des traces exploitables pour un système de détection. Dans le cadre du projet, ils jouent le rôle de scénarios d'attaque contrôlés.
+
+Le principe général est le suivant :
+\begin{enumerate}
+    \item Kali Linux lance un scan vers Ubuntu Victime.
+    \item Ubuntu Victime répond selon l'état de ses ports et services.
+    \item Les résultats Nmap documentent le comportement observé.
+    \item Les fichiers \code{.xml} peuvent être analysés automatiquement.
+    \item Un futur module IA ou tableau de bord peut utiliser ces informations pour reconnaître des comportements de reconnaissance.
+\end{enumerate}
+
+\section{Exploitation possible des fichiers XML}
+Les fichiers \code{.xml} sont les plus adaptés à un traitement automatique. Ils contiennent les informations de scan sous une forme structurée : cible, état de l'hôte, ports, protocoles, services, versions et durées. Un script Python peut donc les parser pour construire un jeu de données ou alimenter un tableau de bord.
+
+\section{Différence entre durée du scan et réactivité de détection}
+Il ne faut pas confondre la durée du scan avec la réactivité du système de détection. La durée du scan correspond au temps mis par Nmap pour terminer son exécution. La réactivité correspond au délai entre le début du comportement suspect et la génération d'une alerte.
+
+\[
+T_{\text{réactivité}} = T_{\text{alerte}} - T_{\text{début du scan}}
+\]
+
+\begin{table}[H]
+\centering
+\caption{Méthode de mesure de la réactivité}
+\label{tab:reactivite}
+\begin{tabularx}{\textwidth}{L{4cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Élément} & \color{white}\textbf{Méthode} \\
+\midrule
+Heure de début & Heure indiquée dans le rapport Nmap ou notée manuellement au lancement du scan. \\
+Heure de détection & Heure de génération de l'alerte par le module IA, le tableau de bord, un IDS ou un script de surveillance. \\
+Temps de réactivité & Différence entre l'heure de détection et l'heure de début du scan. \\
+Limite actuelle & Les rapports Nmap documentent les scans, mais ne contiennent pas de journal d'alerte. La mesure finale nécessite donc un système de détection connecté. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Scénarios les plus utiles pour la validation IA}
+Les scans rapides T4 et T5 sont utiles pour tester la réaction à un comportement dense et visible. Le scan lent est utile pour tester la robustesse face à une reconnaissance discrète. Le scan XMAS est intéressant pour introduire une technique atypique. Le scan UDP permet d'ajouter un comportement différent du TCP classique.
+
+% =========================
+% Chapitre 8
+% =========================
+\chapter{Sécurité, limites et améliorations}
+
+\section{Mesures de sécurité prises}
+Le laboratoire est conçu pour rester contrôlé. Les scans sont limités à une adresse privée interne, \code{192.168.100.20}, depuis une source privée interne, \code{192.168.100.10}. Le réseau \code{lab-cyber} évite que le trafic de reconnaissance ne soit envoyé vers des machines extérieures au projet.
+
+Les interfaces NAT restent séparées du chemin utilisé pour l'attaque. Elles servent seulement à l'accès extérieur éventuel des machines virtuelles, mais ne sont pas utilisées comme réseau de scan.
+
+\section{Limites observées}
+Plusieurs limites doivent être prises en compte :
+\begin{itemize}
+    \item les fichiers fournis sont des rapports Nmap, mais aucune capture \code{.pcap} n'est présente ;
+    \item le scan OS n'a pas donné de correspondance exacte malgré les indices Linux ;
+    \item le scan UDP contient des états \code{open|filtered}, qui restent moins conclusifs que les résultats TCP ;
+    \item la réactivité réelle du système de détection ne peut pas être calculée sans journal d'alerte.
+\end{itemize}
+
+\section{Améliorations proposées}
+Pour renforcer la qualité de la suite du projet, les actions suivantes peuvent être ajoutées :
+\begin{enumerate}
+    \item relancer les scans en capturant le trafic avec \code{tcpdump} ou Wireshark ;
+    \item produire des fichiers \code{.pcap} pour analyser les paquets réels ;
+    \item connecter un IDS ou un script de détection au réseau \code{lab-cyber} ;
+    \item noter systématiquement l'heure de début du scan et l'heure de génération de l'alerte ;
+    \item comparer les résultats entre scans rapides, lents et atypiques ;
+    \item automatiser le parsing des fichiers \code{.xml} pour alimenter le tableau de bord ou le module IA.
+\end{enumerate}
+
+% =========================
+% Conclusion
+% =========================
+\chapter{Conclusion}
+
+Cette partie du projet a permis de construire un laboratoire de cybersécurité fonctionnel sous VirtualBox. Deux machines virtuelles ont été configurées avec des rôles distincts : Kali Linux comme machine attaquante et Ubuntu Victime comme machine cible. Le réseau interne \code{lab-cyber} a permis d'isoler les échanges de test dans le plan d'adressage \code{192.168.100.0/24}.
+
+Les vérifications réseau confirment que Kali Linux utilise l'adresse \code{192.168.100.10/24} sur son interface interne et qu'Ubuntu Victime utilise l'adresse \code{192.168.100.20/24} sur son interface interne. Cette architecture fournit une base claire et reproductible pour les simulations de reconnaissance.
+
+Dix scans Nmap ont été exécutés, couvrant plusieurs profils : classique, complet, orienté services, orienté OS, agressif, UDP, XMAS, lent, rapide et très rapide. Les résultats montrent que la victime expose principalement deux services TCP : SSH sur le port 22 et HTTP sur le port 80. Les fichiers générés en \code{.nmap}, \code{.xml} et \code{.gnmap} constituent une base exploitable pour la rédaction, l'analyse automatique et l'intégration avec un futur module IA.
+
+La suite logique consiste à brancher un système de détection ou un tableau de bord, à relancer les scénarios les plus représentatifs, puis à mesurer la réactivité réelle entre le début du scan et la génération d'une alerte.
+
+% =========================
+% Annexes
+% =========================
+\appendix
+\chapter{Inventaire des fichiers de scan}
+
+\begin{longtable}{L{6.5cm}L{2.5cm}L{6.0cm}}
+\caption{Inventaire des fichiers générés par les dix scans}\label{tab:inventaire}\\
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Nom du fichier} & \color{white}\textbf{Format} & \color{white}\textbf{Rôle} \\
+\midrule
+\endfirsthead
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Nom du fichier} & \color{white}\textbf{Format} & \color{white}\textbf{Rôle} \\
+\midrule
+\endhead
+\code{01_syn_scan.gnmap} & \code{.gnmap} & Format grepable \\
+\code{01_syn_scan.nmap} & \code{.nmap} & Rapport lisible par humain \\
+\code{01_syn_scan.xml} & \code{.xml} & Données structurées \\
+\code{02_full_tcp_scan.gnmap} & \code{.gnmap} & Format grepable \\
+\code{02_full_tcp_scan.nmap} & \code{.nmap} & Rapport lisible par humain \\
+\code{02_full_tcp_scan.xml} & \code{.xml} & Données structurées \\
+\code{03_service_detection.gnmap} & \code{.gnmap} & Format grepable \\
+\code{03_service_detection.nmap} & \code{.nmap} & Rapport lisible par humain \\
+\code{03_service_detection.xml} & \code{.xml} & Données structurées \\
+\code{04_os_detection.gnmap} & \code{.gnmap} & Format grepable \\
+\code{04_os_detection.nmap} & \code{.nmap} & Rapport lisible par humain \\
+\code{04_os_detection.xml} & \code{.xml} & Données structurées \\
+\code{05_aggressive_scan.gnmap} & \code{.gnmap} & Format grepable \\
+\code{05_aggressive_scan.nmap} & \code{.nmap} & Rapport lisible par humain \\
+\code{05_aggressive_scan.xml} & \code{.xml} & Données structurées \\
+\code{06_udp_scan.gnmap} & \code{.gnmap} & Format grepable \\
+\code{06_udp_scan.nmap} & \code{.nmap} & Rapport lisible par humain \\
+\code{06_udp_scan.xml} & \code{.xml} & Données structurées \\
+\code{07_xmas_scan.gnmap} & \code{.gnmap} & Format grepable \\
+\code{07_xmas_scan.nmap} & \code{.nmap} & Rapport lisible par humain \\
+\code{07_xmas_scan.xml} & \code{.xml} & Données structurées \\
+\code{08_slow_scan.gnmap} & \code{.gnmap} & Format grepable \\
+\code{08_slow_scan.nmap} & \code{.nmap} & Rapport lisible par humain \\
+\code{08_slow_scan.xml} & \code{.xml} & Données structurées \\
+\code{09_fast_scan.gnmap} & \code{.gnmap} & Format grepable \\
+\code{09_fast_scan.nmap} & \code{.nmap} & Rapport lisible par humain \\
+\code{09_fast_scan.xml} & \code{.xml} & Données structurées \\
+\code{10_very_fast_scan.gnmap} & \code{.gnmap} & Format grepable \\
+\code{10_very_fast_scan.nmap} & \code{.nmap} & Rapport lisible par humain \\
+\code{10_very_fast_scan.xml} & \code{.xml} & Données structurées \\
+\bottomrule
+\end{longtable}
+
+\chapter{Sorties réseau synthétiques}
+
+\section{Ubuntu Victime}
+\begin{lstlisting}[style=terminal,caption={Sortie synthétique de ip -br a sur Ubuntu Victime}]
+lo      UNKNOWN 127.0.0.1/8 ::1/128
+enp0s3  UP      10.0.2.15/24 ...
+enp0s8  UP      192.168.100.20/24
+\end{lstlisting}
+
+\section{Kali Linux}
+\begin{lstlisting}[style=terminal,caption={Sortie synthétique de ip -br a sur Kali Linux}]
+lo    UNKNOWN 127.0.0.1/8 ::1/128
+eth0  UP      ...
+eth1  UP      192.168.100.10/24
+\end{lstlisting}
+
+\chapter{Bilan final de validation}
+
+\begin{table}[H]
+\centering
+\caption{Validation des objectifs techniques}
+\label{tab:validation}
+\begin{tabularx}{\textwidth}{L{5.2cm}L{3cm}Y}
+\toprule
+\rowcolor{MainBlue}
+\color{white}\textbf{Objectif} & \color{white}\textbf{Statut} & \color{white}\textbf{Justification} \\
+\midrule
+Créer une machine attaquante & Validé & Kali Linux est configurée et connectée au réseau interne \code{lab-cyber}. \\
+Créer une machine victime & Validé & Ubuntu Victime est configurée et connectée au réseau interne \code{lab-cyber}. \\
+Séparer NAT et réseau de scan & Validé & Les interfaces NAT existent, mais les scans utilisent le réseau interne. \\
+Attribuer les adresses internes & Validé & Kali utilise \code{192.168.100.10/24} et Ubuntu utilise \code{192.168.100.20/24}. \\
+Produire des scans Nmap variés & Validé & Dix scénarios de scan ont été exécutés. \\
+Produire des fichiers exploitables & Validé & Trente fichiers ont été générés : \code{.nmap}, \code{.xml} et \code{.gnmap}. \\
+Mesurer la réactivité IA & À compléter & Un journal d'alerte ou un module de détection connecté est nécessaire pour calculer le délai réel. \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\end{document}

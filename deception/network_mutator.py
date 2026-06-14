@@ -1,10 +1,14 @@
 import os
+import sys
 import json
 import random
 import datetime
 import urllib.request
 from scapy.all import IP, TCP
 from netfilterqueue import NetfilterQueue
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+import config
 
 
 def log_event(event_type, src_port, new_ttl):
@@ -21,7 +25,8 @@ def log_event(event_type, src_port, new_ttl):
     }
 
     # 1. Local JSONL log
-    with open('mutation_logs.json', 'a') as f:
+    os.makedirs(os.path.dirname(config.DECEPTION_LOG_FILE), exist_ok=True)
+    with open(config.DECEPTION_LOG_FILE, 'a') as f:
         f.write(json.dumps(new_entry) + "\n")
 
     # 2. POST to dashboard (best-effort)
@@ -42,6 +47,20 @@ def log_event(event_type, src_port, new_ttl):
         urllib.request.urlopen(req, timeout=2.0)
     except Exception:
         pass
+
+
+# In-memory MTD state: tracks port offsets for ML integration
+_current_port_offset = 0
+
+def compute_mtd_port_delta(src_ip=None):
+    """
+    Returns the current MTD port offset (feature index 10 in the ML pipeline).
+    This value indicates how far the active service ports have been rotated
+    from their baseline positions. Used by the bridge to populate the
+    'mtd_port_delta' feature for ML classification.
+    """
+    return _current_port_offset
+
 
 def mutate_packet(packet):
     """

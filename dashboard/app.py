@@ -2,10 +2,11 @@
 
 Combines Adil's real-time backend with the user's Aegis visual design.
 Reads detection_logs.json and deception_logs.json, pushes via Socket.IO.
+Supports both JSON array and JSONL (one JSON object per line) formats.
 """
 import os, json, time, threading
 from datetime import datetime
-from flask import Flask, render_template, send_from_directory
+from flask import Flask, render_template, request, jsonify
 from flask_socketio import SocketIO
 
 import sys
@@ -20,14 +21,47 @@ app.config["SECRET_KEY"] = "aegis-ids-2026"
 socketio = SocketIO(app, cors_allowed_origins="*", async_mode="threading")
 
 
+# ── Ensure data directory exists ──────────────────────────────────
+os.makedirs(DATA_DIR, exist_ok=True)
+
+
+# ── JSON / JSONL loader ───────────────────────────────────────────
 def load_json(path):
-    try:
-        with open(path, "r") as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
+    """Load a log file. Handles both JSON array and JSONL formats."""
+    if not os.path.exists(path):
         return []
+    entries = []
+    with open(path, "r") as f:
+        content = f.read().strip()
+    if not content:
+        return []
+    # Try JSON array first
+    try:
+        data = json.loads(content)
+        if isinstance(data, list):
+            return data
+        return [data]
+    except json.JSONDecodeError:
+        pass
+    # Fall back to JSONL (one JSON object per line)
+    for line in content.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        try:
+            entries.append(json.loads(line))
+        except json.JSONDecodeError:
+            continue
+    return entries
 
 
+def append_to_jsonl(path, entry):
+    """Append a single JSON object as a new line (JSONL format)."""
+    with open(path, "a") as f:
+        f.write(json.dumps(entry) + "\n")
+
+
+# ── Stats computation ─────────────────────────────────────────────
 def compute_stats(logs):
     total = len(logs)
     attacks = sum(1 for e in logs if e.get("label") == 1 or e.get("prediction") == 1)
@@ -70,6 +104,7 @@ def get_threat_level(deception_logs):
     return "LOW"
 
 
+# ── Routes ────────────────────────────────────────────────────────
 @app.route("/")
 def index():
     return render_template("index.html")
@@ -112,6 +147,82 @@ def api_events():
     return all_events[:100]
 
 
+# ── POST endpoints (bridge + deception → dashboard) ────────────────
+@app.route("/api/alert", methods=["POST"])
+def api_alert():
+    """Receive alert from bridge, persist, and push to clients."""
+    data = request.get_json(force=True, silent=True)
+    if not data:
+        return jsonify({"error": "no json"}), 400
+
+    entry = {
+        "timestamp": data.get("timestamp", datetime.now().isoformat()),
+        "src_ip": data.get("src_ip", "unknown"),
+        "dst_port": data.get("dst_port", 0),
+        "prediction": 1,
+        "confidence": data.get("confidence", 0),
+        "scan_type": data.get("scan_type", "unknown"),
+        "action": data.get("action", "ALERT"),
+        "label": 1
+    }
+    append_to_jsonl(DETECTION_LOG_FILE, entry)
+
+    # Push to connected clients immediately
+    socketio.emit("new_event", {"type": "detection", "data": entry})
+    return jsonify({"ok": True}), 201
+
+
+@app.route("/api/block", methods=["POST"])
+def api_block():
+    """Receive block request from bridge, apply firewall rule, persist."""
+    data = request.get_json(force=True, silent=True)
+    if not data or "ip" not in data:
+        return jsonify({"error": "missing ip"}), 400
+
+    src_ip = data["ip"]
+
+    # Apply firewall block (best-effort, requires root)
+    try:
+        sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'deception'))
+        from monitor_interface import block_ip
+        block_ip(src_ip)
+    except Exception as e:
+        print(f"[DASHBOARD] block_ip failed (need root?): {e}")
+
+    entry = {
+        "timestamp": datetime.now().isoformat(),
+        "src_ip": src_ip,
+        "action": "BLOCK",
+        "prediction": 1,
+        "confidence": data.get("confidence", 1.0),
+        "label": 1
+    }
+    append_to_jsonl(DETECTION_LOG_FILE, entry)
+
+    socketio.emit("new_event", {"type": "detection", "data": entry})
+    return jsonify({"ok": True}), 201
+
+
+@app.route("/api/honeypot_event", methods=["POST"])
+def api_honeypot_event():
+    """Receive deception event from honeypot/MTD modules, persist, and push."""
+    data = request.get_json(force=True, silent=True)
+    if not data:
+        return jsonify({"error": "no json"}), 400
+
+    entry = {
+        "timestamp": data.get("timestamp", datetime.now().isoformat()),
+        "event_type": data.get("service", data.get("event_type", "UNKNOWN")),
+        "src_ip": data.get("src_ip", "unknown"),
+        "details": data.get("commands", data.get("details", "")),
+    }
+    append_to_jsonl(DECEPTION_LOG_FILE, entry)
+
+    socketio.emit("new_event", {"type": "deception", "data": entry})
+    return jsonify({"ok": True}), 201
+
+
+# ── Background push ───────────────────────────────────────────────
 def background_push():
     """Push live data to connected clients every REFRESH_MS."""
     while True:

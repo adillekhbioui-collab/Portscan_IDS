@@ -91,14 +91,25 @@ class AegisBridge:
 
         return preds, probs
 
+    def _persist_local(self, log_file, entry):
+        """Append an entry to a local JSONL log file as fallback."""
+        os.makedirs(os.path.dirname(log_file), exist_ok=True)
+        with open(log_file, "a") as f:
+            f.write(json.dumps(entry) + "\n")
+
     def dispatch_alert(self, src_ip, scan_type, confidence, dst_port=None, honeypot_flag=0):
-        """POST an alert to the Flask dashboard."""
+        """POST an alert to the Flask dashboard. Falls back to local log if dashboard is offline."""
+        from datetime import datetime
         alert = {
+            "timestamp": datetime.now().isoformat(),
             "src_ip": src_ip,
             "scan_type": scan_type,
             "confidence": round(float(confidence), 3),
             "dst_port": dst_port,
             "honeypot_flag": honeypot_flag,
+            "prediction": 1,
+            "action": "ALERT",
+            "label": 1,
         }
         try:
             payload = json.dumps(alert).encode("utf-8")
@@ -111,13 +122,23 @@ class AegisBridge:
             urllib.request.urlopen(req, timeout=3.0)
             return True
         except Exception as e:
-            print(f"[BRIDGE] Dashboard dispatch failed: {e}")
+            print(f"[BRIDGE] Dashboard dispatch failed, writing locally: {e}")
+            self._persist_local(config.DETECTION_LOG_FILE, alert)
             return False
 
-    def dispatch_block(self, src_ip):
-        """POST a block request to the Flask dashboard."""
+    def dispatch_block(self, src_ip, confidence=1.0):
+        """POST a block request to the Flask dashboard. Falls back to local log if offline."""
+        from datetime import datetime
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            "src_ip": src_ip,
+            "action": "BLOCK",
+            "prediction": 1,
+            "confidence": round(float(confidence), 3),
+            "label": 1,
+        }
         try:
-            payload = json.dumps({"ip": src_ip}).encode("utf-8")
+            payload = json.dumps({"ip": src_ip, "confidence": confidence}).encode("utf-8")
             req = urllib.request.Request(
                 f"{self.dashboard_url}/api/block",
                 method="POST",
@@ -127,7 +148,8 @@ class AegisBridge:
             urllib.request.urlopen(req, timeout=3.0)
             return True
         except Exception as e:
-            print(f"[BRIDGE] Block dispatch failed: {e}")
+            print(f"[BRIDGE] Block dispatch failed, writing locally: {e}")
+            self._persist_local(config.DETECTION_LOG_FILE, entry)
             return False
 
     def run_csv(self, csv_path, verbose=True):
@@ -175,7 +197,7 @@ class AegisBridge:
 
                 # Auto-block if confidence exceeds threshold
                 if conf >= config.CONFIDENCE_THRESHOLD:
-                    self.dispatch_block(src_ip)
+                    self.dispatch_block(src_ip, confidence=conf)
 
         return results
 

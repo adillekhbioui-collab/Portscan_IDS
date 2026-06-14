@@ -2,8 +2,12 @@ from scapy.all import sniff, IP, TCP, send
 import json
 import datetime
 import os
+import sys
 import random
 import urllib.request
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+import config
 
 
 def log_event(event_type, attacker_ip, details=""):
@@ -20,7 +24,8 @@ def log_event(event_type, attacker_ip, details=""):
     }
 
     # 1. Local JSONL log
-    with open('mutation_logs.json', 'a') as f:
+    os.makedirs(os.path.dirname(config.DECEPTION_LOG_FILE), exist_ok=True)
+    with open(config.DECEPTION_LOG_FILE, 'a') as f:
         f.write(json.dumps(new_entry) + "\n")
 
     # 2. POST to dashboard (best-effort)
