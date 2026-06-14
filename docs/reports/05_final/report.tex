@@ -2,45 +2,166 @@
 % AEGIS Entropy --- Final Report
 % Adaptive Entropy-based Gateway for Intrusion Suppression
 % ============================================
-\input{preamble}
+\documentclass[12pt,a4paper]{report}
 
+% --- Encoding & Language ---
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{lmodern}
+
+% --- Page Layout ---
+\usepackage[left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm]{geometry}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{0.65em}
+\renewcommand{\arraystretch}{1.25}
+
+% --- Math ---
+\usepackage{amsmath,amssymb}
+
+% --- Graphics ---
+\usepackage{graphicx}
+\graphicspath{
+    {figures/data/}
+    {figures/capture/}
+    {figures/defense/}
+}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+
+% --- Tables ---
+\usepackage{array}
+\usepackage{longtable}
+\usepackage{booktabs}
+\usepackage{tabularx}
+\usepackage[table]{xcolor}
+
+% --- Lists ---
+\usepackage{enumitem}
+\setlist[itemize]{topsep=0.2em,itemsep=0.2em}
+\setlist[enumerate]{topsep=0.2em,itemsep=0.25em}
+
+% --- Code Listings ---
+\usepackage{listings}
+\lstdefinestyle{pythonstyle}{
+    language=Python,
+    basicstyle=\ttfamily\small,
+    keywordstyle=\color{blue}\bfseries,
+    stringstyle=\color{red},
+    commentstyle=\color{gray}\itshape,
+    numbers=left,
+    numberstyle=\tiny\color{gray},
+    stepnumber=1,
+    numbersep=5pt,
+    backgroundcolor=\color{gray!5},
+    frame=single,
+    rulecolor=\color{gray!30},
+    breaklines=true,
+    showstringspaces=false,
+    tabsize=4,
+    captionpos=b
+}
+\lstset{style=pythonstyle}
+
+% --- TikZ ---
+\usepackage{tikz}
+\usetikzlibrary{shapes.geometric, arrows.meta, positioning, calc, decorations.pathmorphing, fit, backgrounds}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+
+% --- Colors for diagrams ---
+\definecolor{darkbg}{HTML}{0b0f19}
+\definecolor{cyan}{HTML}{22d3ee}
+\definecolor{green}{HTML}{34d399}
+\definecolor{red}{HTML}{f87171}
+\definecolor{amber}{HTML}{fbbf24}
+\definecolor{purple}{HTML}{a78bfa}
+\definecolor{codebg}{HTML}{1a2332}
+\definecolor{codegray}{HTML}{94a3b8}
+\definecolor{LightGray}{HTML}{F2F2F2}
+\definecolor{LightBlue}{HTML}{D9EAF7}
+
+% --- Hyperlinks ---
+\usepackage{hyperref}
+\hypersetup{
+    colorlinks=true,
+    linkcolor=blue!70!black,
+    urlcolor=blue!60!black,
+    citecolor=blue!70!black,
+    pdftitle={AEGIS Entropy --- Final Report},
+    pdfauthor={AEGIS Entropy Team}
+}
+
+% --- Headers & Footers ---
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textsc{AEGIS Entropy}}
+\fancyhead[R]{\small\textsc{Final Report}}
+\fancyfoot[C]{\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+% --- Chapter/Section Formatting ---
+\usepackage{titlesec}
+\titleformat{\chapter}[display]
+    {\normalfont\Large\bfseries\color{blue!80!black}}
+    {\chaptertitlename\ \thechapter}
+    {0.5em}
+    {}
+\titleformat{\section}{\normalfont\large\bfseries\color{blue!70!black}}{\thesection}{1em}{}
+\titleformat{\subsection}{\normalfont\normalsize\bfseries\color{blue!60!black}}{\thesubsection}{1em}{}
+
+% --- Custom Commands ---
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\code}[1]{\texttt{\detokenize{#1}}}
+
+% --- Placeholder Command ---
+\newcommand{\todo}[1]{\textcolor{red}{\textbf{[TODO: #1]}}}
+\newcommand{\tobewritten}[1]{\textcolor{orange}{\textit{[To be written by #1]}}}
+
+% ============================================
 \begin{document}
 
 % --- Title Page ---
 \begin{titlepage}
 \centering
-\vspace*{2cm}
+\vspace*{1cm}
 
-\begin{tikzpicture}
-    \node[draw=blue!80, line width=2pt, rounded corners=8pt,
-          minimum width=12cm, minimum height=4cm, fill=blue!3] (box) {};
-    \node[anchor=center] at (box.center) {
-        \begin{minipage}{10cm}
-            \centering
-            {\Huge\bfseries\color{blue!80!black} AEGIS}\\[0.5cm]
-            {\Large\color{blue!60!black} Adaptive Entropy-based Gateway\\for Intrusion Suppression}\\[0.8cm]
-            {\large\color{red} Final Report --- Port Scan Detection \& Response}
-        \end{minipage}
-    };
-\end{tikzpicture}
+{\Large\textsc{ENSA Kenitra}}\\[0.2cm]
+{\small\textsc{Networks and Telecommunication Systems Engineering}}\\[0.2cm]
+{\small\textsc{AI Module --- Semester 2 --- 2026}}
 
 \vspace{2cm}
-{\large\textbf{ENSA Kenitra}\\[0.3cm]
-{\large AI Module --- Semester 2 --- 2026}}
-\vspace{1.5cm}
 
+\rule{\textwidth}{0.5pt}\\[0.8cm]
+
+{\Huge\bfseries AEGIS}\\[0.4cm]
+{\Large Adaptive Entropy-based Gateway\\for Intrusion Suppression}\\[0.3cm]
+{\large\bfseries Final Report --- Port Scan Detection and Response}
+
+\vspace{0.8cm}
+\rule{\textwidth}{0.5pt}
+
+\vspace{2cm}
+
+\begin{minipage}{0.85\textwidth}
+\centering
 \begin{tabular}{rl}
-\textbf{Team:} & Adil DILLEKH (ML, Dashboard, Response, Integration)\\
- & Khadija NAFIA (ML, Preprocessing, Training)\\
+\textbf{Team:} & Adil Lekhbioui (ML, Dashboard, Response, Integration)\\
+ & Khadija Nafia (ML, Preprocessing, Training)\\
  & El Yazid (Deception, MTD, Honeypot)\\
  & Moulay Anas (Capture, Network Lab)\\
- & El Kartouti Anas (Conception, Documentation)\\[0.3cm]
-\textbf{Supervisor:} & Prof. Aniss Moumen\\[0.3cm]
+ & El Kartouti Anas (Conception, Documentation)\\[0.5cm]
+\textbf{Supervisor:} & Prof. Aniss Moumen\\[0.5cm]
 \textbf{Date:} & June 2026\\
 \end{tabular}
+\end{minipage}
 
 \vfill
-{\small ENSA Kenitra --- Networks and Telecommunication Systems Engineering}
+
+{\small ENSA Kenitra --- Morocco}
 \end{titlepage}
 
 % --- Abstract ---
@@ -48,13 +169,15 @@
 \section*{Abstract}
 \addcontentsline{toc}{section}{Abstract}
 
-In the context of increasing network reconnaissance threats, this report presents the design, implementation, and validation of AEGIS Entropy --- an AI-based Network Intrusion Detection and Prevention System specialized in detecting and responding to Port Scan attacks. The system combines supervised Machine Learning classifiers (Random Forest, XGBoost) with an unsupervised anomaly detector (Isolation Forest) to identify port scanning activity from network flow features. Beyond detection, AEGIS integrates a Moving Target Defense (MTD) layer that actively reshapes the network attack surface through port rotation, OS fingerprint spoofing, honeypot deployment, and automated IP blocking. The complete system operates in two modes: an offline mode for analysis of pre-captured Nmap scans, and a live mode for real-time detection and response on a controlled LAN environment. Experimental results on the CICIDS2017 dataset demonstrate detection accuracy of 99.91\% with a False Positive Rate of 0.11\%, exceeding all project success criteria. The defense subsystem achieves full-stack activation in under 520ms, with attacker reconnaissance time increased by 420\% under MTD.
+This report presents the design, implementation, and evaluation of AEGIS Entropy, an AI-based network intrusion detection and prevention system for port scan attacks. The system combines supervised classifiers (Random Forest, XGBoost) with an unsupervised anomaly detector (Isolation Forest) to identify reconnaissance activity from network flow features. A Moving Target Defense layer actively reshapes the attack surface through port rotation, honeypot deployment, and automated IP blocking. The system operates in offline mode for batch analysis of Nmap scans and live mode for real-time detection on a controlled LAN. On the CICIDS2017 dataset, the detection pipeline achieves 99.91\% accuracy with a 0.11\% false positive rate, exceeding all project success criteria. The defense subsystem achieves full-stack activation in under 520ms.
 
 \vspace{1em}
-\noindent\textbf{Keywords:} Network Intrusion Detection, Port Scan, Machine Learning, Random Forest, XGBoost, Moving Target Defense, Honeypot, Honeypot, AEGIS
+\noindent\textbf{Keywords:} Network Intrusion Detection, Port Scan, Machine Learning, Random Forest, XGBoost, Moving Target Defense, Honeypot
 
 % --- Table of Contents ---
 \tableofcontents
+\listoffigures
+\listoftables
 \newpage
 
 % ============================================
