@@ -10,11 +10,11 @@ import os
 # --- Project Paths ---
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(PROJECT_ROOT, "detection", "data")
-MODELS_DIR = os.path.join(PROJECT_ROOT, "detection", "models")
+MODELS_DIR = os.path.join(PROJECT_ROOT, "models", "saved")
 
 # --- Model Files ---
-RF_MODEL_PATH = os.path.join(MODELS_DIR, "random_forest.pkl")
-XGB_MODEL_PATH = os.path.join(MODELS_DIR, "xgboost.pkl")
+RF_MODEL_PATH = os.path.join(MODELS_DIR, "rf_model.pkl")
+XGB_MODEL_PATH = os.path.join(MODELS_DIR, "xgb_model.pkl")
 IF_MODEL_PATH = os.path.join(MODELS_DIR, "isolation_forest.pkl")
 SCALER_PATH = os.path.join(MODELS_DIR, "scaler.pkl")
 
@@ -63,12 +63,6 @@ DASHBOARD_REFRESH_MS = 2000    # Socket.IO push interval (milliseconds)
 # --- Blocking ---
 AUTO_UNBLOCK_MINUTES = 30      # TTL for iptables DROP rules
 
-# --- Deception & MTD ---
+# --- Logging ---
 DETECTION_LOG_FILE = os.path.join(DATA_DIR, "detection_logs.json")
 DECEPTION_LOG_FILE = os.path.join(DATA_DIR, "deception_logs.json")
-SCALER_PATH = os.path.join(MODELS_DIR, "scaler.pkl")
-FEATURES_PATH = os.path.join(MODELS_DIR, "feature_columns.json")
-DECEPTION_PORT_START = 1000    # First port for the deception surface
-DECEPTION_PORT_END = 1100      # Last port for the deception surface
-BAN_THRESHOLD = 10             # Events before auto-blackholing an IP
-DECEPTION_INTERFACE = IDS_INTERFACE  # Interface for NFQUEUE hook (MTD)

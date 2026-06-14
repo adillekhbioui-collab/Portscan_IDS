@@ -36,35 +36,4 @@ h2+='<tr><td class="mono">'+(e2.timestamp||'').substring(11,19)+'</td><td class=
 dc.innerHTML=h2;document.getElementById('dec-count').textContent=n2;}
 });
 })();
-</script></body></html><script>
-(function(){
-var socket=io();
-var tC={LOW:'#34d399',MEDIUM:'#fbbf24',HIGH:'#fb923c',CRITICAL:'#f87171'};
-var tW={LOW:20,MEDIUM:50,HIGH:75,CRITICAL:100};
-setInterval(function(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-GB',{hour12:false})},1000);
-socket.on('stats_update',function(d){
-var det=d.detection||{},dec=d.deception||{},lvl=d.threat_level||'LOW';
-document.getElementById('stat-attacks').textContent=det.attacks||0;
-document.getElementById('stat-blocked').textContent=det.blocked||0;
-document.getElementById('stat-redirects').textContent=dec.redirects||0;
-document.getElementById('stat-rate').textContent=(det.attack_rate||0)+'%';
-var tt=document.getElementById('threat-text');tt.textContent=lvl;tt.style.color=tC[lvl]||'#34d399';
-var tf=document.getElementById('threat-fill');tf.style.width=(tW[lvl]||20)+'%';tf.style.background=tC[lvl]||'#34d399';
-document.getElementById('threat-block').style.borderColor=(tC[lvl]||'#34d399')+'40';
-});
-socket.on('events_update',function(d){
-var dt=document.getElementById('detection-table'),dc=document.getElementById('deception-table');
-if(d.detection&&d.detection.length){var h='',n=0;
-for(var i=d.detection.length-1;i>=0;i--){var e=d.detection[i],a=e.prediction===1,c=a?'attack':'benign';
-var act=e.action||(a?'BLOCK':'ALLOW');
-h+='<tr><td class="mono">'+(e.timestamp||'').substring(11,19)+'</td><td>'+(e.src_ip||'?')+'</td><td>'+(e.dst_port||'?')+'</td><td class="ev-'+c+'">'+(a?'ATTACK':'BENIGN')+'</td><td>'+act+'</td></tr>';n++;}
-dt.innerHTML=h;document.getElementById('det-count').textContent=n;}
-if(d.deception&&d.deception.length){var h2='',n2=0;
-for(var j=d.deception.length-1;j>=0;j--){var e2=d.deception[j];var dk=[];
-for(var k in e2){if(k!=='timestamp'&&k!=='event_type')dk.push(k+': '+e2[k]);}
-var cls='ev-'+(e2.event_type||'').toLowerCase();
-h2+='<tr><td class="mono">'+(e2.timestamp||'').substring(11,19)+'</td><td class="'+cls+'">'+(e2.event_type||'?')+'</td><td>'+(e2.src_ip||'-')+'</td><td>'+dk.join(', ')+'</td></tr>';n2++;}
-dc.innerHTML=h2;document.getElementById('dec-count').textContent=n2;}
-});
-})();
 </script></body></html>

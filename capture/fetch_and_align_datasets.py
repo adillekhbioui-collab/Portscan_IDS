@@ -2,7 +2,7 @@
 Aegis Entropy - Multi-Dataset Reconnaissance Training Pipeline
 ==============================================================
 Targeted download and alignment of CSE-CIC-IDS2018 and UNSW-NB15
-reconnaissance/port-scan slices into the 48-feature Aegis schema.
+reconnaissance/port-scan slices into the 11-feature Aegis schema.
 
 Downloads only the specific CSV files containing PortScan/Reconnaissance
 traffic -- not the full multi-GB archives.
@@ -23,24 +23,23 @@ import time
 import urllib.request
 import urllib.error
 import urllib.parse
+import sys
 from pathlib import Path
 
 import numpy as np
 import pandas as pd
 
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+import config
+
 # ---------------------------------------------------------------------------
 # Configuration
 # ---------------------------------------------------------------------------
-BASE_DIR = Path(r"C:\Users\vPro\Desktop\Aegis")
+BASE_DIR = Path(config.PROJECT_ROOT) / "capture"
 RAW_DIR = BASE_DIR / "raw_datasets"
-OUTPUT_DIR = BASE_DIR / "pipeline_output"
-FEATURES_FILE = OUTPUT_DIR / "feature_names.json"
-
+OUTPUT_DIR = Path(config.PROJECT_ROOT) / "detection" / "pipeline_output"
+TARGET_FEATURES = config.FEATURE_NAMES
 RANDOM_STATE = 42
-
-# Target 48-feature schema (our contract)
-with open(FEATURES_FILE) as f:
-    TARGET_FEATURES = json.load(f)
 
 print("=" * 72)
 print("  AEGIS ENTROPY - Multi-Dataset Recon Training Data Fetcher")
@@ -283,9 +282,10 @@ def filter_unswnb15(df: pd.DataFrame) -> pd.DataFrame:
 
 
 # ---------------------------------------------------------------------------
-# 4. Column Mapping -> 48-Feature Aegis Schema
+# 4. Column Mapping -> 11-Feature Aegis Schema
 # ---------------------------------------------------------------------------
 # CSE-CIC-IDS2018 uses CICFlowMeter v3 columns (nearly identical to CICIDS2017)
+# Only the 11 features from config.FEATURE_NAMES are mapped.
 CICIDS2018_COL_MAP = {
     "Distinct Dst Ports/IP":           "Dst Port",
     "Unique Dst IPs/Src":              "Dst Port",
@@ -337,9 +337,9 @@ CICIDS2018_COL_MAP = {
     "MTD Port Delta":                  None,
 }
 
-# UNSW-NB15 Argus/Bro-IDS 49-feature set -> Aegis features
+# UNSW-NB15 Argus/Bro-IDS 49-feature set -> Aegis 11-feature schema
 # NOTE: Many Aegis features have no direct equivalent in UNSW-NB15.
-# TCP flags (syn/rst/ack/fin/pst/urg) and port/IP columns are absent.
+# TCP flags (syn/rst/ack) and header lengths are absent.
 # These are filled with 0 (see map_to_aegis_schema fallback).
 UNSWNB15_COL_MAP = {
     "Distinct Dst Ports/IP":           "ct_dst_sport_ltm",   # Proxy: count of connections to same dest port
@@ -394,8 +394,8 @@ UNSWNB15_COL_MAP = {
 
 
 def map_to_aegis_schema(df: pd.DataFrame, source: str) -> pd.DataFrame:
-    """Map source dataset columns to the 48-feature Aegis schema."""
-    print(f"\n  [MAP] Aligning {source} to 48-feature Aegis schema...")
+    """Map source dataset columns to the 11-feature Aegis schema."""
+    print(f"\n  [MAP] Aligning {source} to 11-feature Aegis schema...")
 
     col_map = CICIDS2018_COL_MAP if source == "cicids2018" else UNSWNB15_COL_MAP
     mapped = pd.DataFrame(index=df.index)
@@ -422,20 +422,11 @@ def map_to_aegis_schema(df: pd.DataFrame, source: str) -> pd.DataFrame:
         if len(unmapped) > 10:
             print(f"    ... and {len(unmapped) - 10} more")
 
-    # Inject synthetic features
-    rng = np.random.RandomState(RANDOM_STATE)
-    n = len(mapped)
-    scan_mask = mapped["Distinct Dst Ports/IP"] > 0
-
-    shadow = np.zeros(n, dtype=int)
-    shadow[scan_mask] = rng.binomial(1, 0.15, size=scan_mask.sum())
-    shadow[~scan_mask] = rng.binomial(1, 0.02, size=(~scan_mask).sum())
-    mapped["Shadow Node Interaction"] = shadow
-
-    port_delta = np.zeros(n, dtype=int)
-    port_delta[scan_mask] = rng.randint(0, 1024, size=scan_mask.sum())
-    port_delta[~scan_mask] = rng.randint(0, 128, size=(~scan_mask).sum())
-    mapped["MTD Port Delta"] = port_delta
+    # Set placeholder columns to 0 (no synthetic injection — avoids data leakage)
+    if "Shadow Node Interaction" in mapped.columns:
+        mapped["Shadow Node Interaction"] = 0
+    if "MTD Port Delta" in mapped.columns:
+        mapped["MTD Port Delta"] = 0
 
     # Clean
     mapped.replace([np.inf, -np.inf], np.nan, inplace=True)
@@ -445,8 +436,8 @@ def map_to_aegis_schema(df: pd.DataFrame, source: str) -> pd.DataFrame:
     if dropped > 0:
         print(f"  [CLEAN] Dropped {dropped:,} rows with NaN/Inf")
 
-    assert list(mapped.columns) == TARGET_FEATURES, \
-        f"Column mismatch! Got {list(mapped.columns)[:5]}... vs {TARGET_FEATURES[:5]}..."
+    # Keep only the 11 features defined in config
+    mapped = mapped[[f for f in TARGET_FEATURES if f in mapped.columns]]
 
     print(f"  [OK] {source}: {len(mapped):,} rows x {len(mapped.columns)} features")
     return mapped

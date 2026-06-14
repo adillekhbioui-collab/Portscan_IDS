@@ -1,1 +1,1 @@
-../../detection/pipeline_output/feature_names.json
+["Destination Port", "Flow Duration", "Total Fwd Packets", "SYN Flag Count", "RST Flag Count", "ACK Flag Count", "Flow IAT Mean", "Bwd Packet Length Mean", "Init_Win_bytes_forward", "shadow_node_interaction", "mtd_port_delta"]

@@ -82,13 +82,11 @@ Portscan_IDS/
 |   +-- core_deception.py              Attacker redirection, blacklisting
 |   +-- network_mutator.py             Port rotation to shuffle honeypot surface
 |   +-- traffic_shaper.py              NetfilterQueue packet mutation
-|   +-- active_defense.py              Automated response engine
 |   +-- monitor_interface.py           Terminal-based deception telemetry
 |
 |-- bridge/                            Inter-module Communication
 |   +-- bridge.py                      AegisBridge: ML -> dashboard + defense
 |   +-- nmap_parser.py                 Nmap XML/JSON -> feature extraction
-|   +-- event_bridge.py                Socket.IO live event streaming
 |   +-- test_pipeline.py               End-to-end integration test
 |
 |-- dashboard/                         SOC Dashboard
@@ -155,7 +153,6 @@ Based on [Aegis Entropy](https://github.com/MrGray17/Aegis_Entropy) &mdash; Movi
 | `core_deception.py` | Redirects attackers to decoy ports via iptables REDIRECT, auto-blacklists after threshold |
 | `network_mutator.py` | Rotates the honeypot surface every 30s, shuffles active ports |
 | `traffic_shaper.py` | NFQUEUE hook mutates outgoing TCP destination ports in real-time |
-| `active_defense.py` | Automated response engine that orchestrates all deception actions |
 | `monitor_interface.py` | Terminal-based telemetry dashboard for the deception layer |
 
 ---

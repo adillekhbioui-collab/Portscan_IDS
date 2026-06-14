@@ -57,7 +57,7 @@ echo "  Training Random Forest + XGBoost + Isolation Forest..."
 if [ -f "models/saved/rf_model.pkl" ] && [ -f "models/saved/xgb_model.pkl" ]; then
     echo "  Trained models found — skipping training. Delete models/saved/ to retrain."
 else
-    python3 detection/src/cicids2017_pipeline.py 2>&1 | tail -20
+    python3 detection/src/retrain_11features.py 2>&1 | tail -20
     echo "  Training complete."
 fi
 
@@ -77,18 +77,6 @@ nohup python3 dashboard/app.py > data/dashboard.log 2>&1 &
 DASHBOARD_PID=$!
 echo "  Dashboard PID: $DASHBOARD_PID"
 
-# Launch event bridge in background
-echo "  Starting event bridge..."
-nohup python3 -c "
-import sys, time, json
-sys.path.insert(0, '.')
-from bridge.event_bridge import watch_and_emit
-from dashboard.app import socketio
-watch_and_emit(socketio)
-" > data/bridge.log 2>&1 &
-BRIDGE_PID=$!
-echo "  Bridge PID: $BRIDGE_PID"
-
 # --- Status ---
 echo ""
 echo "============================================="
@@ -98,15 +86,13 @@ echo ""
 echo "  Dashboard:  http://$(hostname -I | awk '{print $1}'):5000"
 echo "  Dashboard PID: $DASHBOARD_PID"
 echo ""
-echo "  To stop: kill $DASHBOARD_PID $BRIDGE_PID"
+echo "  To stop: kill $DASHBOARD_PID"
 echo ""
-echo "  Next steps:"
-echo "  1. Open the dashboard URL in your browser"
-echo "  2. Start your Kali VM and run attacks"
-echo "  3. Watch events appear in real-time on the dashboard"
+echo "  Offline demo (run on saved Nmap XMLs):"
+echo "    python3 bridge/nmap_parser.py --scans-dir capture/azerty/scans --output nmap_features.csv"
+echo "    python3 bridge/bridge.py --input nmap_features.csv"
 echo ""
-echo "  To start deception subsystem (optional, requires sudo):"
-echo "  sudo iptables -A OUTPUT -p tcp -j NFQUEUE --queue-num 1"
-echo "  python3 deception/src/traffic_shaper.py &"
-echo "  python3 deception/src/network_mutator.py &"
-echo "  python3 deception/src/monitor_interface.py"
+echo "  Live demo (requires 2-VM setup):"
+echo "    1. Open the dashboard URL in your browser"
+echo "    2. Start your Kali VM and run: bash demo/kali_attack.sh"
+echo "    3. Watch events appear in real-time on the dashboard"

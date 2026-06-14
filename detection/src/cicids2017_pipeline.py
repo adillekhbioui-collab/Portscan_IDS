@@ -36,8 +36,8 @@ import time
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
-DATA_PATH = Path(r"C:\Users\vPro\Desktop\Aegis\Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv")
-OUTPUT_DIR = Path(r"C:\Users\vPro\Desktop\Aegis\pipeline_output")
+DATA_PATH = BASE / "data" / "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv"
+OUTPUT_DIR = BASE / "pipeline_output"
 RANDOM_STATE = 42
 TEST_SIZE = 0.2
 TARGET_LABEL = "PortScan"
