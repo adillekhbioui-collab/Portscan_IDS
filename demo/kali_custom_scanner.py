@@ -1,67 +1,43 @@
 #!/usr/bin/env python3
-"""AEGIS Demo — Custom Slow Scanner (Kali).
+# AEGIS Custom Low-Rate Scanner
+# Generates stealthy scan traffic that triggers Isolation Forest detection.
 
-Low-rate port scanner that spaces probes over time.
-Designed to test the Isolation Forest "slow scan" detection.
-
-Usage:
-    python3 kali_custom_scanner.py <target_ip> [duration_seconds]
-"""
-import sys
 import socket
-import time
 import random
+import time
+import sys
 
-def slow_scan(target_ip, duration=60, min_delay=0.5, max_delay=2.0):
-    """Scan common ports at a slow rate over the given duration."""
-    ports = [21, 22, 23, 25, 53, 80, 110, 135, 139, 443,
-             445, 993, 995, 1433, 3306, 3389, 5432, 5900, 8080, 8443]
-    random.shuffle(ports)
+TARGET = sys.argv[1] if len(sys.argv) > 1 else "192.168.100.20"
+PORTS = [22, 80, 443, 3306, 5432, 8080, 8443, 9090]
+INTERVAL_MIN = 3.0
+INTERVAL_MAX = 8.0
 
-    print(f"[*] Slow scan: {target_ip} over {duration}s")
-    print(f"[*] Ports to scan: {len(ports)} common ports")
-    print(f"[*] Delay range: {min_delay}s - {max_delay}s between probes")
-    print()
 
-    start = time.time()
-    open_ports = []
-    scanned = 0
-
-    while time.time() - start < duration:
-        for port in ports:
-            if time.time() - start >= duration:
-                break
-
-            try:
-                sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-                sock.settimeout(1)
-                result = sock.connect_ex((target_ip, port))
-                if result == 0:
-                    print(f"  [OPEN] {target_ip}:{port}")
-                    open_ports.append(port)
-                sock.close()
-            except socket.error:
-                pass
-
-            scanned += 1
-            delay = random.uniform(min_delay, max_delay)
-            elapsed = time.time() - start
-            print(f"  [{elapsed:.1f}s] Scanned {scanned} ports, "
-                  f"found {len(open_ports)} open", end="\r")
-            time.sleep(delay)
-
-    print()
-    print(f"\n[+] Slow scan complete: {scanned} probes in {time.time()-start:.1f}s")
-    if open_ports:
-        print(f"[+] Open ports: {open_ports}")
-    return open_ports
+def scan(target, port):
+    try:
+        s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        s.settimeout(2)
+        s.connect_ex((target, port))
+        s.close()
+        return True
+    except Exception:
+        return False
 
 
 if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        print(f"Usage: {sys.argv[0]} <target_ip> [duration_seconds]")
-        sys.exit(1)
+    print(f"[*] Custom scanner targeting {TARGET}")
+    print(f"[*] Ports: {PORTS}")
+    print(f"[*] Interval: {INTERVAL_MIN}-{INTERVAL_MAX}s (low-rate)")
+    scan_count = 0
 
-    target = sys.argv[1]
-    duration = int(sys.argv[2]) if len(sys.argv) > 2 else 60
-    slow_scan(target, duration)
+    try:
+        while True:
+            port = random.choice(PORTS)
+            result = scan(TARGET, port)
+            scan_count += 1
+            status = "OPEN" if result else "closed"
+            print(f"  [{scan_count}] {TARGET}:{port} -> {status}")
+            wait = random.uniform(INTERVAL_MIN, INTERVAL_MAX)
+            time.sleep(wait)
+    except KeyboardInterrupt:
+        print(f"\n[*] Stopped after {scan_count} scans")

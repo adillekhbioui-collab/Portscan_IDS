@@ -267,9 +267,9 @@ When the ML pipeline classifies traffic as an attack, the system uses iptables R
     blocked/.style={-{Stealth[length=3mm]}, thick, red, densely dashed},
     redirected/.style={-{Stealth[length=3mm]}, thick, amber}
 ]
-    \node[attacker] (atk) at (0,0) {\textbf{Attacker}\\192.168.56.20};
+    \node[attacker] (atk) at (0,0) {\textbf{Attacker}\\192.168.100.10};
     \node[iptables] (fw) at (4,0) {iptables\\REDIRECT\\rule};
-    \node[server] (srv) at (8,1) {\textbf{Real Server}\\192.168.56.10};
+    \node[server] (srv) at (8,1) {\textbf{Real Server}\\192.168.100.20};
     \node[honeypot] (hp) at (8,-1) {\textbf{Honeypot}\\Decoy Service};
 
     \draw[blocked] (atk) -- node[above, font=\tiny, red] {blocked} (srv);
@@ -309,9 +309,9 @@ Each event record contains:
 {
     "timestamp": "2026-06-14T15:30:00",
     "event_type": "REDIRECT | PHANTOM | BLACKLIST",
-    "attacker_ip": "192.168.56.20",
+    "attacker_ip": "192.168.100.10",
     "details": "iptables REDIRECT to port 8080",
-    "source_ip": "192.168.56.20"
+    "source_ip": "192.168.100.10"
 }
 \end{lstlisting}
 
@@ -652,7 +652,7 @@ The ML pipeline outputs a JSON record per classified flow:
 \begin{lstlisting}[style=python, caption={Detection output record}]
 {
     "timestamp": "2026-06-14T15:30:00",
-    "source_ip": "192.168.56.20",
+    "source_ip": "192.168.100.10",
     "verdict": "ATTACK",
     "model": "xgboost",
     "confidence": 0.987,
@@ -691,9 +691,9 @@ The defense subsystem feeds back into the detection pipeline: the \texttt{honeyp
 
 The defense subsystem was evaluated on a two-machine setup:
 \begin{itemize}[leftmargin=*, itemsep=3pt]
-    \item \textbf{Ubuntu Server} (192.168.56.10): AEGIS defense + ML models + Dashboard
-    \item \textbf{Kali Linux} (192.168.56.20): Attacker machine running Nmap, custom scanners, and attack scripts
-    \item \textbf{Network}: VMware NAT, 192.168.56.0/24
+    \item \textbf{Ubuntu Server} (192.168.100.20): AEGIS defense + ML models + Dashboard
+    \item \textbf{Kali Linux} (192.168.100.10): Attacker machine running Nmap, custom scanners, and attack scripts
+    \item \textbf{Network}: VirtualBox Internal Network, 192.168.100.0/24
     \item \textbf{Dataset}: CICIDS2017 (11 features, 9 CSV + 2 MTD placeholders)
 \end{itemize}
 

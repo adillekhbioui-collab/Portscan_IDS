@@ -5,54 +5,54 @@ Simulate a real port scan attack from Kali Linux against the AEGIS IDS running o
 ## Prerequisites
 
 - **VMware Workstation** (or VirtualBox)
-- **Ubuntu Server VM** — 4GB RAM, 2 CPUs, NAT Network `192.168.56.0/24`
-- **Kali Linux VM** — 2GB RAM, same NAT Network
+- **Ubuntu Server VM** — 4GB RAM, 2 CPUs, VirtualBox Internal Network lab-cyber `192.168.100.0/24`
+- **Kali Linux VM** — 2GB RAM, same VirtualBox Internal Network lab-cyber
 
 ## Network Setup
 
 1. In VMware: **Edit → Virtual Network Editor → Add Network → VMnet8 (NAT)**
-2. Set subnet to `192.168.56.0/24`, disable DHCP
-3. Ubuntu Server VM: set static IP `192.168.56.10`
-4. Kali VM: set static IP `192.168.56.20`
+2. Set subnet to `192.168.100.0/24`, disable DHCP
+3. Ubuntu Server VM: set static IP `192.168.100.20`
+4. Kali VM: set static IP `192.168.100.10`
 
 ```bash
 # Ubuntu Server (inside VM):
-sudo nmcli con mod "Wired connection 1" ipv4.addresses 192.168.56.10/24
+sudo nmcli con mod "Wired connection 1" ipv4.addresses 192.168.100.20/24
 sudo nmcli con mod "Wired connection 1" ipv4.method manual
 sudo nmcli con up "Wired connection 1"
 
 # Kali (inside VM):
-sudo ip addr add 192.168.56.20/24 dev eth0
+sudo ip addr add 192.168.100.10/24 dev eth0
 ```
 
 ## Step 1: Set Up AEGIS (Ubuntu Server)
 
 ```bash
 # Copy the demo scripts to your Ubuntu Server
-scp demo/* your_user@192.168.56.10:~/AEGIS/
+scp demo/* your_user@192.168.100.20:~/AEGIS/
 
 # SSH into Ubuntu Server
-ssh your_user@192.168.56.10
+ssh your_user@192.168.100.20
 
 # Run setup
 chmod +x ~/AEGIS/demo/ubuntu_setup.sh
 ~/AEGIS/demo/ubuntu_setup.sh
 ```
 
-The dashboard will be at: **http://192.168.56.10:5000**
+The dashboard will be at: **http://192.168.100.20:5000**
 
 ## Step 2: Run Attacks (Kali)
 
 ```bash
 # Copy attack scripts to Kali
-scp demo/* your_user@192.168.56.20:~/attacks/
+scp demo/* your_user@192.168.100.10:~/attacks/
 
 # SSH into Kali
-ssh your_user@192.168.56.20
+ssh your_user@192.168.100.10
 
 # Run the attack simulation
 chmod +x ~/attacks/kali_attack.sh
-~/attacks/kali_attack.sh 192.168.56.10
+~/attacks/kali_attack.sh 192.168.100.20
 ```
 
 ### What Each Phase Does
@@ -67,7 +67,7 @@ chmod +x ~/attacks/kali_attack.sh
 
 ## Step 3: Watch the Dashboard
 
-Open **http://192.168.56.10:5000** in your browser on the Ubuntu Server.
+Open **http://192.168.100.20:5000** in your browser on the Ubuntu Server.
 
 You should see:
 - **Attacks Detected** counter increasing in real-time
@@ -78,7 +78,7 @@ You should see:
 ## Architecture During Demo
 
 ```
-Kali (192.168.56.20)          Ubuntu Server (192.168.56.10)
+Kali (192.168.100.10)          Ubuntu Server (192.168.100.20)
 ┌─────────────────┐           ┌──────────────────────────────┐
 │  Nmap scans     │──TCP────▶│  Scapy capture (capture.py)  │
 │  Custom scanner │           │         │                    │
@@ -118,7 +118,7 @@ ls ~/AEGIS/models/saved/
 # Check IPs
 ip addr show
 # Ping test
-ping 192.168.56.10
+ping 192.168.100.20
 # Check firewall
 sudo iptables -L -n
 ```

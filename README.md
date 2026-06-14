@@ -184,7 +184,7 @@ python dashboard/app.py
 bash demo/ubuntu_setup.sh
 
 # Kali Linux:
-bash demo/kali_attack.sh 192.168.56.10
+bash demo/kali_attack.sh 192.168.100.20
 ```
 
 ---
