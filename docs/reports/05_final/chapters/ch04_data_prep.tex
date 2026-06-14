@@ -1,92 +1,102 @@
 % ============================================
 % Chapter 4: Data Exploration and Preparation
 % ============================================
-% Adapted from ml_pipeline_report.tex by Khadija + Adil
-% Updated metrics reflect retrained models on current environment
+% Rewritten — June 2026
+% Based on Khadija's ML pipeline work, retrained models
 
 \chapter{Data Exploration and Preparation}
 
 \section{Introduction}
 
-In the context of the \textbf{AEGIS Entropy} project, the artificial intelligence-based detection module constitutes the core component of the defense system against \textit{Port Scan} attacks. This chapter details every step of the data pipeline: from exploring and cleaning the raw data, through selecting features according to the Data Dictionary, to preparing the final dataset for model training, strictly adhering to the PDCA (\textit{Plan-Do-Check-Act}) methodology and the academic standards taught in class.
+Before any machine learning model can be trained, the data must be understood, cleaned, and properly prepared. This chapter walks through the complete data preparation pipeline that transforms raw network flow records from the CICIDS2017 dataset into a clean, balanced, and standardized dataset ready for model training. Every decision made at this stage --- how to handle missing values, what to do with outliers, whether to balance the classes --- directly impacts the quality of the detection system. For this reason, we follow the PDCA (\textit{Plan-Do-Check-Act}) methodology, documenting not only what was done but why each choice was made.
 
-The primary objective is to build a detection pipeline capable of achieving the success criteria defined in the project's final plan:
+The primary objective is to produce a dataset that enables the detection pipeline to meet the success criteria defined in the project plan:
 \begin{itemize}
     \item \textbf{F1-Score} $\geq$ 88\%
     \item \textbf{Accuracy} $\geq$ 90\%
     \item \textbf{False Positive Rate (FPR)} $<$ 6\%
 \end{itemize}
 
-\section{Dataset Used}
+\section{Dataset Overview}
 
-The dataset used for training and evaluating the models is \textbf{CICIDS2017} (\textit{Canadian Institute for Cybersecurity Intrusion Detection System}), an academic benchmark dataset for network intrusion detection. It was generated in a controlled environment replicating realistic network traffic conditions, including both benign traffic and simulated attacks.
+\subsection{What is CICIDS2017?}
 
-The specific file utilized is:
-\begin{center}
-\texttt{Friday-WorkingHours-Afternoon-PortScan.pcap\_ISCX.csv}
-\end{center}
-
-\noindent This file contains network flows captured on Friday afternoon, a period during which \textit{Port Scan} attacks (via \texttt{Nmap}) were executed.
+The \textbf{CICIDS2017} dataset (\textit{Canadian Institute for Cybersecurity Intrusion Detection System}, 2017) is one of the most widely cited academic benchmarks for network intrusion detection research. Unlike older datasets such as KDD-99 --- which dates back to 1999 and no longer reflects modern network behavior --- CICIDS2017 was generated in a controlled environment that replicates realistic network traffic conditions, including both benign user activity and simulated attacks across multiple days.
 
 \begin{table}[H]
 \centering
-\caption{Dataset characteristics}
+\caption{Dataset characteristics — CICIDS2017 PortScan subset}
+\label{tab:dataset}
 \begin{tabular}{ll}
 \toprule
 \textbf{Property} & \textbf{Value} \\
 \midrule
-Number of instances (rows) & 286,467 \\
-Number of features (columns) & 79 \\
+Number of flow records (rows) & 286,467 \\
+Number of raw features (columns) & 79 \\
 \texttt{PortScan} class & 158,930 (55.48\%) \\
 \texttt{BENIGN} class & 127,537 (44.52\%) \\
-Format & CSV (aggregated network flows) \\
+File used & \texttt{Friday-WorkingHours-Afternoon-PortScan.pcap\_ISCX.csv} \\
+Format & CSV — aggregated network flows (\textit{flow-level}) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
-\noindent A slight imbalance in favor of the \texttt{PortScan} class is observed, which will be addressed later using the SMOTE technique (Section~\ref{sec:smote}).
+\subsection{Understanding the Class Distribution}
+
+The dataset contains 55.48\% PortScan traffic and 44.52\% benign traffic. This is a slight imbalance in favor of the attack class, which is unusual: in most intrusion detection datasets, attacks represent a small minority (typically $<$ 5\%). Here, the PortScan class actually constitutes the \textit{majority}. This has important consequences:
+
+\begin{itemize}
+    \item \textbf{For supervised models} (Random Forest, XGBoost): the imbalance is moderate and can be managed with SMOTE (Section~\ref{sec:smote}).
+    \item \textbf{For unsupervised models} (Isolation Forest): the majority class being the attack class creates a fundamental problem, which we analyse in detail in Chapter~5 (\textit{majority anomaly paradox}).
+\end{itemize}
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.72\textwidth]{class_distribution.png}
-\caption{Class distribution in the CICIDS2017 dataset (PortScan vs BENIGN)}
+\includegraphics[width=0.65\textwidth]{class_distribution.png}
+\caption{Class distribution in the CICIDS2017 PortScan dataset. The attack class (PortScan) constitutes 55.48\% of the total records --- a slight majority.}
 \label{fig:class_dist}
 \end{figure}
 
-\section{Feature Selection (Data Dictionary)}
+\section{Feature Selection}
 
-The project's Data Dictionary defines \textbf{13 features} deemed relevant for detecting Port Scan attacks. However, since the CICIDS2017 dataset is a collection of aggregated flow data (\textit{flow-level}), it does not directly contain all these features. A \textbf{mapping} process was conducted to establish the correspondence between the theoretical features and the available CSV columns.
+\subsection{From the Data Dictionary to the CSV}
 
-\begin{longtable}{p{3.8cm}cp{3.5cm}p{4cm}}
-\caption{Feature Mapping: Data Dictionary $\rightarrow$ CSV Columns} \label{tab:feature_mapping} \\
+The project's Data Dictionary defines 13 features theoretically relevant for detecting port scan attacks. However, CICIDS2017 is a collection of aggregated network flows (\textit{flow-level data}), not raw packet captures. As a result, not all 13 features are available from the CSV. A mapping process was conducted to find the best proxy for each theoretical feature.
+
+\begin{longtable}{p{3.5cm}cp{3.5cm}p{4.5cm}}
+\caption{Feature mapping: Data Dictionary $\rightarrow$ CICIDS2017 CSV columns} \\
+\label{tab:feature_mapping} \\
 \toprule
-\textbf{Feature (Dict.)} & \textbf{Avail.} & \textbf{CSV Column} & \textbf{Justification} \\
+\textbf{Feature (Dictionary)} & \textbf{Avail.} & \textbf{CSV Column} & \textbf{Justification} \\
 \midrule
 \endfirsthead
 \toprule
-\textbf{Feature (Dict.)} & \textbf{Avail.} & \textbf{CSV Column} & \textbf{Justification} \\
+\textbf{Feature (Dictionary)} & \textbf{Avail.} & \textbf{CSV Column} & \textbf{Justification} \\
 \midrule
 \endhead
-Distinct Dst Ports & $\approx$ & Destination Port & Proxy: the variance of ports targeted by scanners provides a discriminative signal \\
-SYN Flag Count & \checkmark & SYN Flag Count & Direct match \\
-RST Flag Count & \checkmark & RST Flag Count & Direct match \\
-Flow Duration & \checkmark & Flow Duration & Direct match \\
-Total Fwd Packets & \checkmark & Total Fwd Packets & Direct match \\
-ACK Flag Count & \checkmark & ACK Flag Count & Direct match \\
-IAT Mean & \checkmark & Flow IAT Mean & Direct match \\
-Bwd Packet Length & \checkmark & Bwd Packet Length Mean & Mean variant \\
-TCP Window Size & \checkmark & Init\_Win\_bytes\_forward & Best proxy available in CICIDS2017 \\
+Distinct Dst Ports & $\approx$ & Destination Port & Proxy: scanners target many different ports, so the port number itself carries discriminative signal \\
+SYN Flag Count & \checkmark & SYN Flag Count & Direct match — counts SYN packets per flow \\
+RST Flag Count & \checkmark & RST Flag Count & Direct match — counts RST (reset) packets per flow \\
+Flow Duration & \checkmark & Flow Duration & Direct match — scan flows are typically very short \\
+Total Fwd Packets & \checkmark & Total Fwd Packets & Direct match — scanners send few packets per probe \\
+ACK Flag Count & \checkmark & ACK Flag Count & Direct match — counts ACK packets per flow \\
+IAT Mean & \checkmark & Flow IAT Mean & Direct match — inter-arrival time between packets \\
+Bwd Packet Length & \checkmark & Bwd Packet Length Mean & Mean variant — average backward packet size \\
+TCP Window Size & \checkmark & Init\_Win\_bytes\_forward & Best proxy — initial window size in the forward direction \\
 \midrule
-Unique Dst IPs & $\times$ & --- & Absent from CSV; live capture feature only \\
-TTL Value & $\times$ & --- & Absent from flow-level data \\
-Shadow Node Interaction & N/A & Placeholder = 0 & Future integration with honeypot module \\
-MTD Port Delta & N/A & Placeholder = 0 & Future integration with MTD module \\
+Unique Dst IPs & $\times$ & --- & Absent from CSV; available only in live capture mode \\
+TTL Value & $\times$ & --- & Absent from flow-level data; packet-level feature \\
+Shadow Node Interaction & N/A & Placeholder = 0 & Reserved for future integration with the honeypot module \\
+MTD Port Delta & N/A & Placeholder = 0 & Reserved for future integration with the MTD module \\
 \bottomrule
 \end{longtable}
 
-\noindent \textbf{Final Decision:} The pipeline uses \textbf{11 features} in total: 9 extracted from the CSV + 2 placeholders (initialized to 0) reserved for real-time integration with the honeypot and MTD modules.
+\subsection{Final Feature Set: 11 Features}
 
-\begin{lstlisting}[caption={Defining features in the pipeline},label={lst:features}]
+The pipeline uses \textbf{11 features}: 9 extracted from the CSV + 2 placeholders initialized to 0. The two placeholders (\texttt{shadow\_node\_interaction} and \texttt{mtd\_port\_delta}) are reserved for real-time integration with the defense subsystems described in Chapter~7. In offline mode (using the CICIDS2017 dataset), they are simply set to zero.
+
+\begin{lstlisting}[caption={Building the 11-feature vector}, label={lst:features}]
+# 9 features extracted from CSV
 features = [
     'Destination Port',        # Proxy for Distinct Dst Ports
     'Flow Duration',
@@ -99,63 +109,98 @@ features = [
     'Init_Win_bytes_forward'   # Proxy for TCP Window Size
 ]
 X = df[features].copy()
-X['shadow_node_interaction'] = 0  # Honeypot placeholder
-X['mtd_port_delta'] = 0           # MTD placeholder
+
+# 2 placeholders for future real-time integration
+X['shadow_node_interaction'] = 0  # Honeypot module
+X['mtd_port_delta'] = 0           # MTD module
 \end{lstlisting}
+
+\subsection{Correlation Analysis}
+
+Figure~\ref{fig:corr_heatmap} shows the correlation matrix between the 9 extracted features. Most features are only weakly correlated, which is desirable: strongly correlated features would provide redundant information and complicate model training. The low correlation confirms that each feature is bringing independent discriminative signal to the model.
 
 \begin{figure}[H]
 \centering
-\includegraphics[width=0.88\textwidth]{correlation_heatmap.png}
-\caption{Correlation matrix between selected features}
+\includegraphics[width=0.85\textwidth]{correlation_heatmap.png}
+\caption{Correlation matrix of the 9 features extracted from CICIDS2017. Low inter-feature correlation (mostly $< 0.3$) indicates each feature contributes independent information to the detection task.}
 \label{fig:corr_heatmap}
 \end{figure}
 
-\section{Preprocessing Pipeline}
+\section{Data Quality Issues}
 
-Data preprocessing is a critical step that directly influences model quality. Following the methodology taught in class, the pipeline follows a sequential four-step process: cleaning, outlier detection, skewness correction, and export.
+Real-world network datasets, even curated ones like CICIDS2017, contain quality problems that must be addressed before training. This section describes the three main issues we identified and how we resolved them.
 
-\subsection{Data Cleaning}
+\subsection{Issue 1: Malformed Column Names}
 
-The first step involves preparing the raw data for analysis. The CICIDS2017 dataset presents several common issues:
+CSV headers in the CICIDS2017 dataset contain \textbf{leading spaces} (e.g., \texttt{' Flow Duration'} instead of \texttt{'Flow Duration'}). These spaces cause silent errors in Pandas: trying to access a column by its clean name fails, producing a \texttt{KeyError} that is easy to miss if not validated.
 
-\begin{enumerate}
-    \item \textbf{Spaces in column names:} CSV headers contain leading spaces (e.g., \texttt{' Flow Duration'} instead of \texttt{'Flow Duration'}). These spaces cause silent errors when accessing columns.
-    \item \textbf{Infinite values:} Some columns contain \texttt{inf} or \texttt{-inf} values, resulting from division by zero during network flow calculations.
-    \item \textbf{Missing values:} After replacing infinities, \texttt{NaN} values may remain.
-\end{enumerate}
-
-\begin{lstlisting}[caption={Cleaning raw data}]
-# 1. Remove spaces in column names
+\begin{lstlisting}[caption={Stripping leading spaces from column names}]
 df.columns = [col.strip() for col in df.columns]
+\end{lstlisting}
 
-# 2. Replace infinite values with NaN
+\subsection{Issue 2: Missing and Infinite Values}
+
+Network flow calculations sometimes produce infinite values (from division by zero in rate or ratio computations) or missing values (when a flow contains no packets in a particular direction). These must be handled before training because most Machine Learning algorithms cannot process NaN or infinite values.
+
+\textbf{Why we use the median} (not the mean or zero):
+\begin{itemize}
+    \item The \textbf{mean} is sensitive to extreme values --- a single very long flow would skew the entire column's average.
+    \item \textbf{Zero replacement} introduces bias: it tells the model "this flow had zero packets" when in fact the data was simply missing.
+    \item The \textbf{median} is robust to outliers and provides a representative value of central tendency, particularly suited for the asymmetric distributions typical of network traffic.
+\end{itemize}
+
+\begin{lstlisting}[caption={Handling infinite and missing values}]
+# Replace infinite values with NaN
 df.replace([np.inf, -np.inf], np.nan, inplace=True)
 
-# 3. Imputation by median (robust to outliers)
+# Impute missing values with the median of each feature
 df[FEATURES] = df[FEATURES].fillna(df[FEATURES].median())
 \end{lstlisting}
 
-\noindent \textbf{Choice of median:} Unlike the mean (sensitive to extreme values) or zero replacement (which introduces bias), the median provides a robust estimation of central tendency, particularly suited for the asymmetric distributions typical of network traffic.
+\subsection{Issue 3: Outliers}
 
-\subsection{Outlier Detection and Handling (IQR Method)}
+\subsubsection{How Many Outliers?}
 
-Outliers can distort model training by creating biases in distributions. The \textbf{Interquartile Range (IQR)} method is used to detect them in a statistically rigorous manner.
+Table~\ref{tab:outliers} shows the number of outliers detected per feature using the IQR method. Several features (Flow Duration, Flow IAT Mean, Destination Port) contain tens of thousands of outliers. This is \textbf{expected and normal} for network traffic data, where a small number of flows can be orders of magnitude larger than the typical flow (e.g., a file download versus a DNS query).
 
-\paragraph{Formal Definition:} Let $Q_1$ be the first quartile (25\textsuperscript{th} percentile) and $Q_3$ be the third quartile (75\textsuperscript{th} percentile) of a variable. The interquartile range is defined by:
-\begin{equation}
-    IQR = Q_3 - Q_1
-\end{equation}
+\begin{table}[H]
+\centering
+\caption{Outliers detected per feature using the IQR method ($Q_1 - 1.5 \times IQR$ to $Q_3 + 1.5 \times IQR$)}
+\label{tab:outliers}
+\begin{tabular}{lr}
+\toprule
+\textbf{Feature} & \textbf{Outliers Detected} \\
+\midrule
+Flow IAT Mean & 57,303 \\
+Flow Duration & 52,212 \\
+Destination Port & 37,788 \\
+ACK Flag Count & 35,555 \\
+Total Fwd Packets & 35,156 \\
+Bwd Packet Length Mean & 32,387 \\
+SYN Flag Count & 6,014 \\
+RST Flag Count & 21 \\
+Init\_Win\_bytes\_forward & 0 \\
+\bottomrule
+\end{tabular}
+\end{table}
 
-\noindent The detection bounds are:
-\begin{equation}
-    \text{Lower Bound} = Q_1 - 1.5 \times IQR \qquad ; \qquad \text{Upper Bound} = Q_3 + 1.5 \times IQR
-\end{equation}
+\subsubsection{How We Handle Outliers: Capping, Not Removing}
 
-\noindent Any observation outside the interval $[\text{Lower Bound},\; \text{Upper Bound}]$ is considered an outlier.
+We have two options when faced with outliers:
+\begin{enumerate}
+    \item \textbf{Remove} the rows containing outliers --- but this risks discarding valuable attack data. In a security context, throwing away anomalous records defeats the purpose.
+    \item \textbf{Cap} the values (\textit{Winsorization}) --- values beyond the IQR bounds are adjusted to the nearest bound. This preserves the data while limiting the influence of extreme values on model training.
+\end{enumerate}
 
-\paragraph{Handling Strategy:} Rather than \textbf{removing} rows containing outliers (which risks losing valuable attack data), we apply \textbf{capping} (\textit{Winsorization}): values beyond the bounds are adjusted to the nearest bound.
+We chose \textbf{capping} for two reasons:
+\begin{itemize}
+    \item It preserves all 286,467 records, including attack samples.
+    \item It prevents extreme values from distorting the distributions used by our models, without introducing bias.
+\end{itemize}
 
-\begin{lstlisting}[caption={Outlier detection and capping using IQR}]
+\paragraph{Formal Definition:} Let $Q_1$ be the 25\textsuperscript{th} percentile and $Q_3$ the 75\textsuperscript{th} percentile of a feature. The interquartile range is $IQR = Q_3 - Q_1$. Any value outside the interval $[Q_1 - 1.5 \times IQR,\; Q_3 + 1.5 \times IQR]$ is considered an outlier and is capped to the nearest bound.
+
+\begin{lstlisting}[caption={Outlier capping using the IQR method}]
 for feature in FEATURES:
     Q1 = df[feature].quantile(0.25)
     Q3 = df[feature].quantile(0.75)
@@ -163,37 +208,12 @@ for feature in FEATURES:
     lower_bound = Q1 - 1.5 * IQR
     upper_bound = Q3 + 1.5 * IQR
 
-    # Count detected outliers
-    outliers = ((df[feature] < lower_bound) |
-                (df[feature] > upper_bound)).sum()
-
-    # Capping instead of removal
+    # Cap outliers instead of removing rows
     df[feature] = np.where(
         df[feature] < lower_bound, lower_bound, df[feature])
     df[feature] = np.where(
         df[feature] > upper_bound, upper_bound, df[feature])
 \end{lstlisting}
-
-\begin{table}[H]
-\centering
-\caption{Number of outliers detected per feature (IQR method)}
-\label{tab:outliers}
-\begin{tabular}{lr}
-\toprule
-\textbf{Feature} & \textbf{Detected Outliers} \\
-\midrule
-Destination Port & 37,788 \\
-Flow Duration & 52,212 \\
-Total Fwd Packets & 35,156 \\
-SYN Flag Count & 6,014 \\
-RST Flag Count & 21 \\
-ACK Flag Count & 35,555 \\
-Flow IAT Mean & 57,303 \\
-Bwd Packet Length Mean & 32,387 \\
-Init\_Win\_bytes\_forward & 0 \\
-\bottomrule
-\end{tabular}
-\end{table}
 
 \begin{figure}[H]
 \centering
@@ -208,64 +228,53 @@ Init\_Win\_bytes\_forward & 0 \\
 \begin{subfigure}[b]{0.32\textwidth}\includegraphics[width=\textwidth]{boxplot_Flow_IAT_Mean.png}\caption{Flow IAT Mean}\end{subfigure}\hfill
 \begin{subfigure}[b]{0.32\textwidth}\includegraphics[width=\textwidth]{boxplot_Bwd_Packet_Length_Mean.png}\caption{Bwd Pkt Length Mean}\end{subfigure}\hfill
 \begin{subfigure}[b]{0.32\textwidth}\includegraphics[width=\textwidth]{boxplot_Init_Win_bytes_forward.png}\caption{Init Win Bytes Fwd}\end{subfigure}
-\caption{Boxplots of all 9 selected features illustrating the presence and extent of outliers}
+\caption{Boxplots of all 9 selected features. The dots beyond the whiskers represent outliers. Features like Flow Duration and Flow IAT Mean exhibit heavy tails — typical of network traffic where a few flows can be orders of magnitude larger than the median.}
 \label{fig:boxplots}
 \end{figure}
 
-\subsection{Skewness Analysis and Logarithmic Transformation}
+\subsection{Issue 4: Skewness}
 
-Skewness measures the degree of asymmetry of a distribution relative to a normal distribution. Fisher's coefficient is defined by:
+Skewness measures the asymmetry of a distribution. A feature with $|\gamma_1| > 1.0$ has a heavily right-skewed (or left-skewed) distribution, which makes it harder for models that assume near-normal distributions to learn effectively.
+
+\textbf{Our solution:} For features with $|\text{skew}| > 1.0$, we apply the logarithmic transformation $\log(1 + x)$. This function (NumPy's \texttt{np.log1p}) has three advantages:
+\begin{itemize}
+    \item It handles zero values correctly ($\log(1 + 0) = 0$), avoiding the undefined $\log(0)$.
+    \item It preserves the relative order of observations --- the largest value before transformation remains the largest after.
+    \item It compresses the range, reducing the influence of extreme values.
+\end{itemize}
+
+The skewness coefficient is defined by Fisher's formula:
 \begin{equation}
     \gamma_1 = \frac{E[(X - \mu)^3]}{\sigma^3}
 \end{equation}
-
-\noindent where $\mu$ is the mean and $\sigma$ the standard deviation. A value of $|\gamma_1| > 1$ indicates strong skewness, justifying a transformation to normalize the distribution.
-
-\paragraph{Applied Transformation:} For features exhibiting strong skewness ($|\text{skew}| > 1.0$), we apply the logarithmic transformation $\log(1 + x)$ (function \texttt{np.log1p}). Using $\log(1+x)$ rather than $\log(x)$ is essential because it:
-\begin{itemize}
-    \item Properly handles zero values ($\log(1+0) = 0$)
-    \item Preserves the relative order of observations
-    \item Reduces the influence of extreme values on the distribution
-\end{itemize}
-
-\begin{lstlisting}[caption={Skewness analysis and logarithmic transformation}]
-for feature in FEATURES:
-    skewness = df[feature].skew()
-    if abs(skewness) > 1.0:
-        # Shift if negative values exist
-        min_val = df[feature].min()
-        if min_val < 0:
-            df[feature] = df[feature] - min_val
-        # Log(1+x) transformation
-        df[feature] = np.log1p(df[feature])
-\end{lstlisting}
+where $\mu$ is the mean and $\sigma$ the standard deviation.
 
 \begin{table}[H]
 \centering
-\caption{Feature skewness analysis}
+\caption{Skewness analysis of all 9 features}
 \label{tab:skewness}
 \begin{tabular}{lrl}
 \toprule
 \textbf{Feature} & \textbf{Skewness} & \textbf{Action} \\
 \midrule
+Total Fwd Packets & 1.32 & Log transform applied \\
 Destination Port & 1.29 & Log transform applied \\
 Flow Duration & 1.27 & Log transform applied \\
-Total Fwd Packets & 1.32 & Log transform applied \\
+Bwd Packet Length Mean & 1.27 & Log transform applied \\
+Flow IAT Mean & 1.24 & Log transform applied \\
+Init\_Win\_bytes\_forward & 0.96 & None ($< 1.0$) \\
 SYN Flag Count & 0.00 & None \\
 RST Flag Count & 0.00 & None \\
 ACK Flag Count & 0.00 & None \\
-Flow IAT Mean & 1.24 & Log transform applied \\
-Bwd Packet Length Mean & 1.27 & Log transform applied \\
-Init\_Win\_bytes\_forward & 0.96 & None ($< 1.0$) \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \subsection{Preprocessed Dataset Export}
 
-After all transformations, the cleaned dataset is exported in CSV format to ensure the \textbf{reproducibility} of the pipeline. The training and evaluation scripts directly consume this preprocessed file.
+After cleaning, outlier capping, and skewness correction, the preprocessed dataset is exported to CSV. This step ensures \textbf{reproducibility}: the training and evaluation scripts consume the same preprocessed file, guaranteeing that results can be replicated.
 
-\begin{lstlisting}[caption={Preprocessed dataset export}]
+\begin{lstlisting}[caption={Exporting the preprocessed dataset}]
 df.to_csv("../data/preprocessed.csv", index=False)
 \end{lstlisting}
 
@@ -273,13 +282,13 @@ df.to_csv("../data/preprocessed.csv", index=False)
 
 \subsection{Train/Test Split (80/20)}
 
-The preprocessed dataset is divided into a training set (80\%) and a test set (20\%), using \textbf{stratified sampling} to preserve class proportions in each partition.
+The preprocessed dataset is divided into a training set (80\%) and a test set (20\%), using \textbf{stratified sampling}. Stratification preserves the class proportions in each partition: if 55.48\% of the full dataset is PortScan, then 55.48\% of the training set and 55.48\% of the test set will also be PortScan.
 
 \begin{lstlisting}[caption={Stratified dataset splitting}]
 X_train, X_test, y_train, y_test = train_test_split(
     X, y,
     test_size=0.2,
-    random_state=42,    # Reproducibility
+    random_state=42,    # Seed for reproducibility
     stratify=y          # Preserves class proportions
 )
 # Result: Train = 229,173 | Test = 57,294
@@ -288,14 +297,15 @@ X_train, X_test, y_train, y_test = train_test_split(
 \subsection{Standardization (StandardScaler)}
 \label{sec:standardscaler}
 
-Standardization transforms each feature to have a mean of 0 and a standard deviation of 1, according to the formula:
+Features like \texttt{Flow Duration} (measured in microseconds, potentially millions) and \texttt{SYN Flag Count} (a small integer, typically 0--2) operate on completely different scales. If we feed these raw values directly to the model, features with larger numerical ranges dominate the learning process.
+
+\textbf{Standardization} transforms each feature to have a mean of 0 and a standard deviation of 1:
 \begin{equation}
     z = \frac{x - \mu}{\sigma}
 \end{equation}
+where $\mu$ and $\sigma$ are the mean and standard deviation of the feature, calculated \textbf{exclusively on the training set}.
 
-\noindent where $\mu$ and $\sigma$ are respectively the mean and standard deviation of the feature \textbf{calculated solely on the training set}.
-
-\paragraph{Data Leakage Prevention:} It is imperative that the \texttt{StandardScaler} is fitted (\texttt{fit}) \textbf{exclusively on the training data}. If the scaler were fitted on the entire dataset (train + test), the test set statistics would contaminate the learning process, skewing evaluation results. The scaler is then saved to be reused during production inference.
+\textbf{Data Leakage Prevention:} It is critical that the scaler is fitted (\texttt{fit}) \textbf{only on the training data}. If we fit the scaler on the entire dataset (train + test), the test set statistics would "leak" into the training process, giving us artificially optimistic results that would not hold in production. The scaler is saved for reuse during inference.
 
 \begin{lstlisting}[caption={Standardization with data leakage prevention}]
 scaler = StandardScaler()
@@ -307,31 +317,51 @@ X_test_scaled  = scaler.transform(X_test)
 joblib.dump(scaler, "../models/saved/scaler.pkl")
 \end{lstlisting}
 
-\subsection{Class Balancing (SMOTE)}
+\subsection{Class Balancing with SMOTE}
 \label{sec:smote}
 
-Although the imbalance is moderate (55/45), applying \textbf{SMOTE} (\textit{Synthetic Minority Oversampling Technique}) ensures unbiased training. SMOTE generates synthetic examples of the minority class by interpolating between existing nearby instances in the feature space.
+\subsubsection{Why Do We Need Balancing?}
 
-\paragraph{SMOTE Principle:} For each instance of the minority class, SMOTE:
+Our dataset has a 55/45 split between PortScan and BENIGN classes. While this imbalance is moderate, it could still bias the model towards predicting PortScan more often than it should. To ensure the model learns to distinguish between classes impartially, we balance the training set.
+
+\subsubsection{How SMOTE Works}
+
+\textbf{SMOTE} (\textit{Synthetic Minority Oversampling Technique}) generates new synthetic examples of the minority class (BENIGN, in our case) rather than simply duplicating existing ones. For each minority instance, SMOTE:
+
 \begin{enumerate}
     \item Identifies its $k$ nearest neighbors (default $k=5$)
     \item Randomly selects one of these neighbors
     \item Creates a synthetic point on the line segment connecting the original instance to the selected neighbor
 \end{enumerate}
 
-\paragraph{Application on training data only:} SMOTE is applied \textbf{after} splitting and standardization, and \textbf{only} on the training set. Applying SMOTE before the split would introduce data leakage, as synthetic points generated from test data could end up in the training set.
+This produces new, realistic samples in the feature space without copying existing data.
 
-\begin{lstlisting}[caption={Application of SMOTE on the training set}]
+\subsubsection{Application Strategy}
+
+SMOTE is applied \textbf{after} splitting and standardization, and \textbf{only} on the training set. Applying SMOTE before the train/test split would create synthetic samples from test data, which could contaminate the training set — another form of data leakage.
+
+\begin{lstlisting}[caption={Applying SMOTE to the training set only}]
 from imblearn.over_sampling import SMOTE
 
 smote = SMOTE(random_state=42)
 X_train_res, y_train_res = smote.fit_resample(
     X_train_scaled, y_train
 )
-# Before SMOTE: 229,173 samples (imbalanced)
-# After SMOTE: 254,288 samples (balanced)
+# Before SMOTE: 229,173 samples (imbalanced 55/45)
+# After SMOTE:  254,288 samples (balanced 50/50)
 \end{lstlisting}
 
 \section{Conclusion}
 
-This chapter covered the complete data exploration and preparation pipeline applied to the CICIDS2017 PortScan dataset. Through descriptive analysis, we identified the key statistical properties and quality issues of the raw data. A series of preprocessing steps --- cleaning, IQR outlier detection, skewness correction, standardization, and SMOTE class balancing --- were then applied to produce a clean, model-ready dataset of 11 features. The next chapter will present the model training and evaluation phase.
+This chapter walked through the complete data preparation pipeline applied to the CICIDS2017 PortScan dataset. Starting from 286,467 raw flow records with 79 columns, we:
+
+\begin{enumerate}
+    \item \textbf{Selected} 11 features (9 extracted from the CSV + 2 MTD/honeypot placeholders), justified by a feature mapping against the project's Data Dictionary.
+    \item \textbf{Cleaned} the data: stripped malformed column names, replaced infinite values with NaN, and imputed missing values using the median (chosen for its robustness to outliers).
+    \item \textbf{Capped outliers} using the IQR method rather than removing them, preserving all attack records.
+    \item \textbf{Corrected skewness} in 5 right-skewed features via $\log(1+x)$ transformation.
+    \item \textbf{Standardized} all features to zero mean and unit variance, with careful prevention of data leakage.
+    \item \textbf{Balanced} the training set using SMOTE to prevent class bias.
+\end{enumerate}
+
+The result is a clean, balanced, 11-feature dataset of 254,288 training samples and 57,294 test samples, ready for model training and evaluation in the next chapter.
