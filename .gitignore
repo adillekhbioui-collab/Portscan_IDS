@@ -20,5 +20,11 @@ build/
 # OS files
 .DS_Store
 Thumbs.db
-venv/
+
+# Data
 data/
+
+# Detection outputs
+detection/results/predictions_rf.csv
+detection/data/*.csv
+detection/data/*.pcap

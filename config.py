@@ -9,13 +9,14 @@ import os
 
 # --- Project Paths ---
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
-DATA_DIR = os.path.join(PROJECT_ROOT, "data")
-MODELS_DIR = os.path.join(PROJECT_ROOT, "models", "saved")
+DATA_DIR = os.path.join(PROJECT_ROOT, "detection", "data")
+MODELS_DIR = os.path.join(PROJECT_ROOT, "detection", "models")
 
 # --- Model Files ---
-RF_MODEL_PATH = os.path.join(MODELS_DIR, "rf_model.pkl")
-XGB_MODEL_PATH = os.path.join(MODELS_DIR, "xgb_model.pkl")
+RF_MODEL_PATH = os.path.join(MODELS_DIR, "random_forest.pkl")
+XGB_MODEL_PATH = os.path.join(MODELS_DIR, "xgboost.pkl")
 IF_MODEL_PATH = os.path.join(MODELS_DIR, "isolation_forest.pkl")
+SCALER_PATH = os.path.join(MODELS_DIR, "scaler.pkl")
 
 # --- Feature Vector Definition ---
 # CRITICAL: This is the EXACT order of features expected by all models.
@@ -24,21 +25,20 @@ IF_MODEL_PATH = os.path.join(MODELS_DIR, "isolation_forest.pkl")
 # Adil (Dashboard) passes features in this order.
 # DO NOT CHANGE without notifying ALL team members.
 FEATURE_NAMES = [
-    "distinct_dst_ports",      # 0  - # unique destination ports per source
-    "syn_flag_count",          # 1  - SYN packets without completing handshake
-    "rst_flag_count",          # 2  - RST responses from closed ports
-    "flow_duration",           # 3  - Duration of probe connection (seconds)
-    "total_fwd_packets",       # 4  - Packets per flow from scanner
-    "iat_mean",                # 5  - Mean inter-arrival time between probes
-    "port_range_entropy",      # 6  - Shannon entropy of destination ports
-    "ack_flag_count",          # 7  - ACK packets without prior SYN
-    "unique_dst_ips",          # 8  - # distinct destination hosts contacted
-    "bwd_packet_length",       # 9  - Response packet size
-    "ttl_value",               # 10 - Time-to-live in IP header
-    "honeypot_flag",           # 11 - Binary: source IP contacted a honeypot?
+    "Destination Port",         # 0  - Destination port (proxy for distinct ports target)
+    "Flow Duration",            # 1  - Duration of connection in microseconds
+    "Total Fwd Packets",        # 2  - Total packets sent in forward direction
+    "SYN Flag Count",           # 3  - Count of SYN flags in flow
+    "RST Flag Count",           # 4  - Count of RST flags in flow
+    "ACK Flag Count",           # 5  - Count of ACK flags in flow
+    "Flow IAT Mean",            # 6  - Mean Inter-Arrival Time of flow
+    "Bwd Packet Length Mean",   # 7  - Mean size of packets in backward direction
+    "Init_Win_bytes_forward",   # 8  - Initial TCP Window size in forward direction
+    "shadow_node_interaction",  # 9  - Binary (0/1): Has the source IP hit a honeypot?
+    "mtd_port_delta"            # 10 - Integer: Port offset from current active MTD port
 ]
 
-FEATURE_COUNT = len(FEATURE_NAMES)  # 12
+FEATURE_COUNT = len(FEATURE_NAMES)  # 11
 
 # --- Detection Thresholds ---
 CONFIDENCE_THRESHOLD = 0.85    # Minimum confidence for automated response
