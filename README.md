@@ -230,6 +230,8 @@ ALERT_THRESHOLD       = 0.80
 | Adil DILLEKH | ML pipeline, data preprocessing, model training & evaluation |
 | Khadija Nafia | ML pipeline co-development |
 | El Yazid | Deception subsystem (Aegis Entropy), dashboard, integration, config |
+| Anas ElKartouti | Documentation and report writing |
+| Anas Moulay | AI integration in virtual machines |
 
 ---
 
