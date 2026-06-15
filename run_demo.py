@@ -15,6 +15,7 @@ import time
 import threading
 import subprocess
 import argparse
+import urllib.request
 
 PROJECT_ROOT = os.path.dirname(os.path.abspath(__file__))
 sys.path.insert(0, PROJECT_ROOT)
@@ -26,6 +27,22 @@ def ensure_dirs():
     """Ensure runtime directories exist."""
     os.makedirs(config.DATA_DIR, exist_ok=True)
     os.makedirs(config.MODELS_DIR, exist_ok=True)
+
+
+def check_models():
+    """Verify that the trained model artifacts exist before starting the demo."""
+    required = {
+        "Random Forest model": config.RF_MODEL_PATH,
+        "StandardScaler": config.SCALER_PATH,
+    }
+    missing = [name for name, path in required.items() if not os.path.exists(path)]
+    if missing:
+        print("\n[ERROR] Missing required model files:")
+        for name in missing:
+            print(f"  - {name}: {required[name]}")
+        print("\nPlease train the models first or place the .pkl files in:")
+        print(f"  {config.MODELS_DIR}")
+        sys.exit(1)
 
 
 def start_dashboard():
@@ -44,8 +61,19 @@ def start_dashboard():
         daemon=True,
     )
     server.start()
-    time.sleep(2)  # Let Flask bind
-    print(f"[AEGIS] Dashboard running at http://localhost:{config.DASHBOARD_PORT}")
+
+    # Wait for Flask to actually accept connections (up to 10 seconds)
+    url = f"http://localhost:{config.DASHBOARD_PORT}/api/stats"
+    for i in range(20):
+        try:
+            urllib.request.urlopen(url, timeout=0.5)
+            print(f"[AEGIS] Dashboard ready at http://localhost:{config.DASHBOARD_PORT}")
+            return server
+        except Exception:
+            time.sleep(0.5)
+
+    print(f"[WARNING] Dashboard did not become ready at {url} — continuing anyway.")
+    print(f"[AEGIS] Dashboard should be available at http://localhost:{config.DASHBOARD_PORT}")
     return server
 
 
@@ -57,6 +85,10 @@ def run_offline_demo():
 
     scans_dir = os.path.join(PROJECT_ROOT, "capture", "scans")
     csv_output = os.path.join(PROJECT_ROOT, "nmap_features.csv")
+
+    if not os.path.isdir(scans_dir):
+        print(f"[ERROR] Scan directory not found: {scans_dir}")
+        return
 
     # Step 1: Parse Nmap XMLs
     print("\n[1/3] Parsing Nmap scan files...")
@@ -109,25 +141,6 @@ def run_offline_demo():
         print("\n[AEGIS] Shutting down.")
 
 
-def run_live_demo():
-    """Start the live capture bridge (requires Scapy + root)."""
-    print("\n" + "=" * 60)
-    print("  AEGIS Entropy — Live Capture Mode")
-    print("=" * 60)
-    print("[INFO] Live mode requires root privileges and a valid interface.")
-    print(f"[INFO] Interface: {config.IDS_INTERFACE}")
-    print("[INFO] Press Ctrl+C to stop.\n")
-
-    bridge_script = os.path.join(PROJECT_ROOT, "bridge", "bridge.py")
-    try:
-        subprocess.run(
-            [sys.executable, bridge_script, "--input", "live"],
-            cwd=PROJECT_ROOT,
-        )
-    except KeyboardInterrupt:
-        print("\n[AEGIS] Stopping live capture.")
-
-
 def interactive_menu():
     """Show the mode selection menu."""
     print("\n" + "=" * 60)
@@ -137,19 +150,16 @@ def interactive_menu():
     print()
     print("  Select demo mode:")
     print()
-    print("    [1] Offline Demo  — Parse saved Nmap scans → ML → Dashboard")
-    print("    [2] Live Capture  — Real-time Scapy capture → ML → Dashboard")
-    print("    [3] Dashboard Only — Start dashboard, no pipeline")
+    print("    [1] Offline Demo   — Parse saved Nmap scans → ML → Dashboard")
+    print("    [2] Dashboard Only — Start dashboard, no pipeline")
     print("    [q] Quit")
     print()
 
     while True:
-        choice = input("  Enter choice (1/2/3/q): ").strip().lower()
+        choice = input("  Enter choice (1/2/q): ").strip().lower()
         if choice == "1":
             return "offline"
         elif choice == "2":
-            return "live"
-        elif choice == "3":
             return "dashboard"
         elif choice == "q":
             return "quit"
@@ -160,17 +170,15 @@ def interactive_menu():
 def main():
     parser = argparse.ArgumentParser(description="AEGIS Entropy — Unified Demo")
     parser.add_argument("--offline", action="store_true", help="Run offline demo directly")
-    parser.add_argument("--live", action="store_true", help="Run live capture directly")
     parser.add_argument("--dashboard-only", action="store_true", help="Start dashboard only")
     args = parser.parse_args()
 
     ensure_dirs()
+    check_models()
 
     # Determine mode
     if args.offline:
         mode = "offline"
-    elif args.live:
-        mode = "live"
     elif args.dashboard_only:
         mode = "dashboard"
     else:
@@ -186,8 +194,6 @@ def main():
     # Run selected mode
     if mode == "offline":
         run_offline_demo()
-    elif mode == "live":
-        run_live_demo()
     elif mode == "dashboard":
         print(f"\n[AEGIS] Dashboard running at http://localhost:{config.DASHBOARD_PORT}")
         print("        Press Ctrl+C to stop.\n")

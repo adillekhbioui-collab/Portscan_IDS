@@ -152,10 +152,11 @@ class AegisBridge:
             self._persist_local(config.DETECTION_LOG_FILE, entry)
             return False
 
-    def run_csv(self, csv_path, verbose=True):
+    def run_csv(self, csv_path, verbose=True, dry_run=False):
         """
         Full pipeline: read CSV → preprocess → predict → dispatch to dashboard.
         Returns a list of result dicts.
+        If dry_run is True, predictions are printed but no alerts/blocks are dispatched.
         """
         if self.model is None:
             self.load_models()
@@ -186,8 +187,8 @@ class AegisBridge:
                 status = "ALERT" if pred == 1 else "benign"
                 print(f"  [{status}] {src_ip}:{dst_port} -> {result['label']} ({conf:.1%})")
 
-            # Dispatch to dashboard
-            if pred == 1 and conf >= config.ALERT_THRESHOLD:
+            # Dispatch to dashboard (unless dry-run)
+            if not dry_run and pred == 1 and conf >= config.ALERT_THRESHOLD:
                 self.dispatch_alert(
                     src_ip=src_ip,
                     scan_type="SYN Scan",
@@ -222,9 +223,10 @@ if __name__ == "__main__":
         dashboard_url=args.dashboard,
     )
 
-    results = bridge.run_csv(args.input)
+    results = bridge.run_csv(args.input, dry_run=args.dry_run)
 
     # Summary
     alerts = [r for r in results if r["prediction"] == 1]
     benign = [r for r in results if r["prediction"] == 0]
-    print(f"\n[BRIDGE] Done. {len(alerts)} alerts, {len(benign)} benign out of {len(results)} flows.")
+    mode_str = " (DRY RUN — no dispatch)" if args.dry_run else ""
+    print(f"\n[BRIDGE] Done{mode_str}. {len(alerts)} alerts, {len(benign)} benign out of {len(results)} flows.")

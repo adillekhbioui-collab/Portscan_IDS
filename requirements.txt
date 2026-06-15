@@ -1,4 +1,7 @@
-# Core
+# Core dependencies — safe to install on Windows, macOS, and Linux.
+# These are required for the offline demo, dashboard, and ML inference.
+
+# ML / data
 pandas>=2.0.0
 numpy>=1.24.0
 scikit-learn>=1.3.0
@@ -6,17 +9,20 @@ xgboost>=2.0.0
 imbalanced-learn>=0.11.0
 joblib>=1.3.0
 
-# Capture Pipeline
-scapy>=2.5.0
-requests>=2.31.0
-pyarrow>=14.0.0
+# Visualization (used by detection/src scripts)
+matplotlib>=3.7.0
+seaborn>=0.12.0
 
 # Dashboard
 flask>=3.0.0
 flask-socketio>=5.3.0
 
+# Capture / bridge utilities
+scapy>=2.5.0
+requests>=2.31.0
+pyarrow>=14.0.0
+
 # Utilities
 python-dateutil>=2.8.0
 
-# Deception (MTD)
-netfilterqueue>=1.1.0
+# NOTE: Linux-only deception dependencies (netfilterqueue) are in requirements-linux.txt.

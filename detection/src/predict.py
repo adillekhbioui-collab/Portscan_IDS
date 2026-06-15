@@ -5,6 +5,10 @@ import numpy as np
 import joblib
 from config import FEATURES
 
+# Resolve project root so default model/scaler paths point to the shared artifacts
+PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+
 def load_model(path):
     return joblib.load(path)
 
@@ -46,28 +50,25 @@ def main():
 
     args = parser.parse_args()
 
-    # Default model path
+    # Default model/scaler paths point to the shared artifacts used by the bridge
     if args.model is None:
-        default_model = os.path.join(os.path.dirname(__file__), "..", "models", "random_forest.pkl")
-        model_path = os.path.normpath(default_model)
+        model_path = os.path.join(PROJECT_ROOT, "models", "saved", "rf_model.pkl")
     else:
         model_path = args.model
-        
+
     if args.scaler is None:
-        default_scaler = os.path.join(os.path.dirname(__file__), "..", "models", "scaler.pkl")
-        scaler_path = os.path.normpath(default_scaler)
+        scaler_path = os.path.join(PROJECT_ROOT, "models", "saved", "scaler.pkl")
     else:
         scaler_path = args.scaler
 
     if not os.path.exists(model_path):
         raise FileNotFoundError(f"Model not found: {model_path}")
-        
+
     if not os.path.exists(scaler_path):
-        print(f"Warning: Scaler not found at {scaler_path}. Proceeding without scaling (NOT RECOMMENDED).")
-        scaler = None
-    else:
-        print(f"Loading scaler from: {scaler_path}")
-        scaler = load_model(scaler_path)
+        raise FileNotFoundError(f"Scaler not found: {scaler_path}. The model requires the saved StandardScaler.")
+
+    print(f"Loading scaler from: {scaler_path}")
+    scaler = load_model(scaler_path)
 
     print(f"Loading model from: {model_path}")
     model = load_model(model_path)

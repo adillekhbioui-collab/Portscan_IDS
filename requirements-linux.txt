@@ -1,0 +1,4 @@
+# Linux-only dependencies for the deception / MTD modules.
+# Do NOT install on Windows — netfilterqueue requires Linux kernel netfilter.
+
+netfilterqueue>=1.1.0

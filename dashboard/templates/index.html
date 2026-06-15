@@ -1,39 +1,153 @@
-<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0"><title>AEGIS - SOC</title><link rel="stylesheet" href="/static/style.css"><link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"><script src="https://cdn.jsdelivr.net/npm/socket.io@4.7.4/socket.io.min.js"></script></head><body>
-<div class="status-bar"><div class="status-left"><span class="logo">AEGIS</span><span class="sep">/</span><span class="sys-name">NETWORK DEFENSE SYSTEM</span></div><div class="status-center"><span class="live-dot"></span><span id="system-status">SYSTEM OPERATIONAL</span></div><div class="status-right"><span>NODE: ENSA-01</span><span class="sep">|</span><span id="clock">--:--:--</span></div></div>
-<div class="main-grid"><div class="left-col"><div class="threat-block" id="threat-block"><div class="threat-label">THREAT LEVEL</div><div class="threat-value" id="threat-text">LOW</div><div class="threat-bar"><div class="threat-fill" id="threat-fill"></div></div></div>
-<div class="metrics-row"><div class="metric m-red"><div class="m-top"><span class="m-dot"></span>DETECTED</div><div class="m-val" id="stat-attacks">0</div><div class="m-sub">attack signatures</div></div><div class="metric m-green"><div class="m-top"><span class="m-dot"></span>BLOCKED</div><div class="m-val" id="stat-blocked">0</div><div class="m-sub">auto-blocked IPs</div></div><div class="metric m-cyan"><div class="m-top"><span class="m-dot"></span>REDIRECTED</div><div class="m-val" id="stat-redirects">0</div><div class="m-sub">to honeypot</div></div><div class="metric m-amber"><div class="m-top"><span class="m-dot"></span>ATTACK RATE</div><div class="m-val" id="stat-rate">0%</div><div class="m-sub">of total traffic</div></div></div>
-<div class="arch-box"><div class="box-header"><span>DATA FLOW</span></div><div class="arch-flow"><div class="af-node af-kali"><div class="af-icon">&#9760;</div><div class="af-name">KALI</div><div class="af-sub">Attacker VM</div></div><div class="af-arrow">&rarr;</div><div class="af-node af-ids"><div class="af-icon">&#9881;</div><div class="af-name">AEGIS IDS</div><div class="af-sub">ML + MTD</div></div><div class="af-split"><div class="af-arrow">&rarr;</div><div class="af-arrow">&rarr;</div></div><div class="af-targets"><div class="af-node af-protect"><div class="af-icon">&#9632;</div><div class="af-name">PROTECTED</div><div class="af-sub">Real Servers</div></div><div class="af-node af-honey"><div class="af-icon">&#9673;</div><div class="af-name">HONEYPOT</div><div class="af-sub">Deception</div></div></div></div></div>
-</div><div class="right-col"><div class="events-box"><div class="box-header"><span>DETECTION LOG</span><span class="ev-count" id="det-count">0</span></div><div class="ev-scroll"><table class="ev-table"><thead><tr><th>TIME</th><th>SOURCE</th><th>PORT</th><th>VERDICT</th><th>ACTION</th></tr></thead><tbody id="detection-table"><tr class="ev-empty"><td colspan="5">Awaiting network traffic...</td></tr></tbody></table></div></div>
-<div class="events-box"><div class="box-header"><span>DECEPTION LOG</span><span class="ev-count" id="dec-count">0</span></div><div class="ev-scroll"><table class="ev-table"><thead><tr><th>TIME</th><th>EVENT</th><th>SOURCE</th><th>DETAILS</th></tr></thead><tbody id="deception-table"><tr class="ev-empty"><td colspan="4">No deception events yet...</td></tr></tbody></table></div></div></div></div>
-<div class="footer-bar"><span>ENSA Kenitra &mdash; AI Module S2 2026</span><span>AEGIS Entropy &mdash; Intrusion Detection &amp; Moving Target Defense</span></div><script>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AEGIS - SOC</title>
+    <link rel="stylesheet" href="/static/style.css">
+    <!-- Google Fonts (loaded if internet is available; otherwise CSS fallbacks are used) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Local Socket.IO client so the dashboard works fully offline -->
+    <script src="/static/socket.io.min.js"></script>
+</head>
+<body>
+<div class="status-bar">
+    <div class="status-left">
+        <span class="logo">AEGIS</span>
+        <span class="sep">/</span>
+        <span class="sys-name">NETWORK DEFENSE SYSTEM</span>
+    </div>
+    <div class="status-center">
+        <span class="live-dot"></span>
+        <span id="system-status">SYSTEM OPERATIONAL</span>
+    </div>
+    <div class="status-right">
+        <span>NODE: ENSA-01</span>
+        <span class="sep">|</span>
+        <span id="clock">--:--:--</span>
+    </div>
+</div>
+<div class="main-grid">
+    <div class="left-col">
+        <div class="threat-block" id="threat-block">
+            <div class="threat-label">THREAT LEVEL</div>
+            <div class="threat-value" id="threat-text">LOW</div>
+            <div class="threat-bar"><div class="threat-fill" id="threat-fill"></div></div>
+        </div>
+        <div class="metrics-row">
+            <div class="metric m-red">
+                <div class="m-top"><span class="m-dot"></span>DETECTED</div>
+                <div class="m-val" id="stat-attacks">0</div>
+                <div class="m-sub">attack signatures</div>
+            </div>
+            <div class="metric m-green">
+                <div class="m-top"><span class="m-dot"></span>BLOCKED</div>
+                <div class="m-val" id="stat-blocked">0</div>
+                <div class="m-sub">auto-blocked IPs</div>
+            </div>
+            <div class="metric m-cyan">
+                <div class="m-top"><span class="m-dot"></span>REDIRECTED</div>
+                <div class="m-val" id="stat-redirects">0</div>
+                <div class="m-sub">to honeypot</div>
+            </div>
+            <div class="metric m-amber">
+                <div class="m-top"><span class="m-dot"></span>ATTACK RATE</div>
+                <div class="m-val" id="stat-rate">0%</div>
+                <div class="m-sub">of total traffic</div>
+            </div>
+        </div>
+        <div class="arch-box">
+            <div class="box-header"><span>DATA FLOW</span></div>
+            <div class="arch-flow">
+                <div class="af-node af-kali"><div class="af-icon">&#9760;</div><div class="af-name">KALI</div><div class="af-sub">Attacker VM</div></div>
+                <div class="af-arrow">&rarr;</div>
+                <div class="af-node af-ids"><div class="af-icon">&#9881;</div><div class="af-name">AEGIS IDS</div><div class="af-sub">ML + MTD</div></div>
+                <div class="af-split"><div class="af-arrow">&rarr;</div><div class="af-arrow">&rarr;</div></div>
+                <div class="af-targets">
+                    <div class="af-node af-protect"><div class="af-icon">&#9632;</div><div class="af-name">PROTECTED</div><div class="af-sub">Real Servers</div></div>
+                    <div class="af-node af-honey"><div class="af-icon">&#9673;</div><div class="af-name">HONEYPOT</div><div class="af-sub">Deception</div></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="right-col">
+        <div class="events-box">
+            <div class="box-header"><span>DETECTION LOG</span><span class="ev-count" id="det-count">0</span></div>
+            <div class="ev-scroll">
+                <table class="ev-table">
+                    <thead><tr><th>TIME</th><th>SOURCE</th><th>PORT</th><th>VERDICT</th><th>ACTION</th></tr></thead>
+                    <tbody id="detection-table"><tr class="ev-empty"><td colspan="5">Awaiting network traffic...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+        <div class="events-box">
+            <div class="box-header"><span>DECEPTION LOG</span><span class="ev-count" id="dec-count">0</span></div>
+            <div class="ev-scroll">
+                <table class="ev-table">
+                    <thead><tr><th>TIME</th><th>EVENT</th><th>SOURCE</th><th>DETAILS</th></tr></thead>
+                    <tbody id="deception-table"><tr class="ev-empty"><td colspan="4">No deception events yet...</td></tr></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="footer-bar">
+    <span>ENSA Kenitra &mdash; AI Module S2 2026</span>
+    <span>AEGIS Entropy &mdash; Intrusion Detection &amp; Moving Target Defense</span>
+</div>
+<script>
 (function(){
-var socket=io();
-var tC={LOW:'#34d399',MEDIUM:'#fbbf24',HIGH:'#fb923c',CRITICAL:'#f87171'};
-var tW={LOW:20,MEDIUM:50,HIGH:75,CRITICAL:100};
-setInterval(function(){document.getElementById('clock').textContent=new Date().toLocaleTimeString('en-GB',{hour12:false})},1000);
-socket.on('stats_update',function(d){
-var det=d.detection||{},dec=d.deception||{},lvl=d.threat_level||'LOW';
-document.getElementById('stat-attacks').textContent=det.attacks||0;
-document.getElementById('stat-blocked').textContent=det.blocked||0;
-document.getElementById('stat-redirects').textContent=dec.redirects||0;
-document.getElementById('stat-rate').textContent=(det.attack_rate||0)+'%';
-var tt=document.getElementById('threat-text');tt.textContent=lvl;tt.style.color=tC[lvl]||'#34d399';
-var tf=document.getElementById('threat-fill');tf.style.width=(tW[lvl]||20)+'%';tf.style.background=tC[lvl]||'#34d399';
-document.getElementById('threat-block').style.borderColor=(tC[lvl]||'#34d399')+'40';
-});
-socket.on('events_update',function(d){
-var dt=document.getElementById('detection-table'),dc=document.getElementById('deception-table');
-if(d.detection&&d.detection.length){var h='',n=0;
-for(var i=d.detection.length-1;i>=0;i--){var e=d.detection[i],a=e.prediction===1,c=a?'attack':'benign';
-var act=e.action||(a?'BLOCK':'ALLOW');
-h+='<tr><td class="mono">'+(e.timestamp||'').substring(11,19)+'</td><td>'+(e.src_ip||'?')+'</td><td>'+(e.dst_port||'?')+'</td><td class="ev-'+c+'">'+(a?'ATTACK':'BENIGN')+'</td><td>'+act+'</td></tr>';n++;}
-dt.innerHTML=h;document.getElementById('det-count').textContent=n;}
-if(d.deception&&d.deception.length){var h2='',n2=0;
-for(var j=d.deception.length-1;j>=0;j--){var e2=d.deception[j];var dk=[];
-for(var k in e2){if(k!=='timestamp'&&k!=='event_type')dk.push(k+': '+e2[k]);}
-var cls='ev-'+(e2.event_type||'').toLowerCase();
-h2+='<tr><td class="mono">'+(e2.timestamp||'').substring(11,19)+'</td><td class="'+cls+'">'+(e2.event_type||'?')+'</td><td>'+(e2.src_ip||'-')+'</td><td>'+dk.join(', ')+'</td></tr>';n2++;}
-dc.innerHTML=h2;document.getElementById('dec-count').textContent=n2;}
-});
+    var socket = io();
+    var tC = {LOW:'#34d399', MEDIUM:'#fbbf24', HIGH:'#fb923c', CRITICAL:'#f87171'};
+    var tW = {LOW:20, MEDIUM:50, HIGH:75, CRITICAL:100};
+    setInterval(function(){
+        document.getElementById('clock').textContent = new Date().toLocaleTimeString('en-GB',{hour12:false});
+    }, 1000);
+    socket.on('stats_update', function(d){
+        var det = d.detection || {}, dec = d.deception || {}, lvl = d.threat_level || 'LOW';
+        document.getElementById('stat-attacks').textContent = det.attacks || 0;
+        document.getElementById('stat-blocked').textContent = det.blocked || 0;
+        document.getElementById('stat-redirects').textContent = dec.redirects || 0;
+        document.getElementById('stat-rate').textContent = (det.attack_rate || 0) + '%';
+        var tt = document.getElementById('threat-text');
+        tt.textContent = lvl;
+        tt.style.color = tC[lvl] || '#34d399';
+        var tf = document.getElementById('threat-fill');
+        tf.style.width = (tW[lvl] || 20) + '%';
+        tf.style.background = tC[lvl] || '#34d399';
+        document.getElementById('threat-block').style.borderColor = (tC[lvl] || '#34d399') + '40';
+    });
+    socket.on('events_update', function(d){
+        var dt = document.getElementById('detection-table'), dc = document.getElementById('deception-table');
+        if(d.detection && d.detection.length){
+            var h = '', n = 0;
+            for(var i = d.detection.length - 1; i >= 0; i--){
+                var e = d.detection[i], a = e.prediction === 1, c = a ? 'attack' : 'benign';
+                var act = e.action || (a ? 'BLOCK' : 'ALLOW');
+                h += '<tr><td class="mono">' + (e.timestamp || '').substring(11,19) + '</td><td>' + (e.src_ip || '?') + '</td><td>' + (e.dst_port || '?') + '</td><td class="ev-' + c + '">' + (a ? 'ATTACK' : 'BENIGN') + '</td><td>' + act + '</td></tr>';
+                n++;
+            }
+            dt.innerHTML = h;
+            document.getElementById('det-count').textContent = n;
+        }
+        if(d.deception && d.deception.length){
+            var h2 = '', n2 = 0;
+            for(var j = d.deception.length - 1; j >= 0; j--){
+                var e2 = d.deception[j];
+                var dk = [];
+                for(var k in e2){
+                    if(k !== 'timestamp' && k !== 'event_type') dk.push(k + ': ' + e2[k]);
+                }
+                var cls = 'ev-' + (e2.event_type || '').toLowerCase();
+                h2 += '<tr><td class="mono">' + (e2.timestamp || '').substring(11,19) + '</td><td class="' + cls + '">' + (e2.event_type || '?') + '</td><td>' + (e2.src_ip || '-') + '</td><td>' + dk.join(', ') + '</td></tr>';
+                n2++;
+            }
+            dc.innerHTML = h2;
+            document.getElementById('dec-count').textContent = n2;
+        }
+    });
 })();
-</script></body></html>
+</script>
+</body>
+</html>
