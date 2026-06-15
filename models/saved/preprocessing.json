@@ -1,0 +1,88 @@
+{
+  "features": [
+    "Destination Port",
+    "Flow Duration",
+    "Total Fwd Packets",
+    "SYN Flag Count",
+    "RST Flag Count",
+    "ACK Flag Count",
+    "Flow IAT Mean",
+    "Bwd Packet Length Mean",
+    "Init_Win_bytes_forward"
+  ],
+  "medians": {
+    "Destination Port": 1110.0,
+    "Flow Duration": 65.0,
+    "Total Fwd Packets": 1.0,
+    "SYN Flag Count": 0.0,
+    "RST Flag Count": 0.0,
+    "ACK Flag Count": 0.0,
+    "Flow IAT Mean": 61.0,
+    "Bwd Packet Length Mean": 6.0,
+    "Init_Win_bytes_forward": 1024.0
+  },
+  "bounds": {
+    "Destination Port": {
+      "lower": -10121.5,
+      "upper": 17082.5
+    },
+    "Flow Duration": {
+      "lower": -35599.0,
+      "upper": 59449.0
+    },
+    "Total Fwd Packets": {
+      "lower": -0.5,
+      "upper": 3.5
+    },
+    "SYN Flag Count": {
+      "lower": 0.0,
+      "upper": 0.0
+    },
+    "RST Flag Count": {
+      "lower": 0.0,
+      "upper": 0.0
+    },
+    "ACK Flag Count": {
+      "lower": 0.0,
+      "upper": 0.0
+    },
+    "Flow IAT Mean": {
+      "lower": -11869.4999995,
+      "upper": 19899.8333325
+    },
+    "Bwd Packet Length Mean": {
+      "lower": -84.0,
+      "upper": 156.0
+    },
+    "Init_Win_bytes_forward": {
+      "lower": -43207.5,
+      "upper": 72644.5
+    }
+  },
+  "log_transform": {
+    "Destination Port": {
+      "shift": 0.0
+    },
+    "Flow Duration": {
+      "shift": 13.0
+    },
+    "Total Fwd Packets": {
+      "shift": 0.0
+    },
+    "SYN Flag Count": {
+      "shift": 0.0
+    },
+    "RST Flag Count": {
+      "shift": 0.0
+    },
+    "ACK Flag Count": {
+      "shift": 0.0
+    },
+    "Flow IAT Mean": {
+      "shift": 13.0
+    },
+    "Bwd Packet Length Mean": {
+      "shift": 0.0
+    }
+  }
+}

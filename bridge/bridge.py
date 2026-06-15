@@ -10,6 +10,7 @@
 import os
 import sys
 import json
+import threading
 import urllib.request
 import pandas as pd
 import numpy as np
@@ -18,6 +19,11 @@ import joblib
 # Add project root for config import
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 import config
+
+# Import shared preprocessing utilities
+detection_src = os.path.join(os.path.dirname(__file__), "..", "detection", "src")
+sys.path.insert(0, detection_src)
+from preprocessing_utils import load_preprocessing_params, apply_preprocessing
 
 
 class AegisBridge:
@@ -30,9 +36,10 @@ class AegisBridge:
         self.features = config.FEATURE_NAMES[:9]  # 9 real features
         self.model = None
         self.scaler = None
+        self.preprocessing_params = None
 
     def load_models(self):
-        """Load the trained scaler and classifier from disk."""
+        """Load the trained scaler, classifier, and preprocessing params from disk."""
         if not os.path.exists(self.model_path):
             raise FileNotFoundError(f"Model not found: {self.model_path}")
         if not os.path.exists(self.scaler_path):
@@ -43,13 +50,22 @@ class AegisBridge:
         print(f"[BRIDGE] Loaded model: {self.model_path}")
         print(f"[BRIDGE] Loaded scaler: {self.scaler_path}")
 
+        preprocessing_params_path = os.path.join(
+            os.path.dirname(self.scaler_path), "preprocessing.json"
+        )
+        if os.path.exists(preprocessing_params_path):
+            self.preprocessing_params = load_preprocessing_params(preprocessing_params_path)
+            print(f"[BRIDGE] Loaded preprocessing params: {preprocessing_params_path}")
+        else:
+            print(f"[BRIDGE] Warning: preprocessing params not found at {preprocessing_params_path}")
+
     def preprocess(self, df):
         """
         Prepare a raw CSV dataframe for prediction:
         1. Strip column names
         2. Extract the 9 real features
-        3. Add 2 placeholder columns (shadow_node_interaction, mtd_port_delta)
-        4. Replace inf -> NaN -> median fill
+        3. Apply saved training preprocessing (median impute, IQR cap, log1p)
+        4. Add 2 placeholder columns (shadow_node_interaction, mtd_port_delta)
         5. Scale with the saved StandardScaler
         """
         df.columns = [col.strip() for col in df.columns]
@@ -60,17 +76,21 @@ class AegisBridge:
 
         X = df[self.features].copy()
 
+        # Load scaler/preprocessing if not already loaded
+        if self.scaler is None:
+            self.load_models()
+
+        # Apply the SAME preprocessing used during training
+        if self.preprocessing_params is not None:
+            X = apply_preprocessing(X, self.preprocessing_params)
+        else:
+            # Fallback: basic cleaning only (predictions may be inaccurate)
+            X = X.replace([np.inf, -np.inf], np.nan)
+            X = X.fillna(X.median())
+
         # Add placeholders for live integration
         X["shadow_node_interaction"] = 0
         X["mtd_port_delta"] = 0
-
-        # Clean
-        X = X.replace([np.inf, -np.inf], np.nan)
-        X = X.fillna(X.median())
-
-        # Load scaler if not already loaded
-        if self.scaler is None:
-            self.load_models()
 
         # Scale
         X_scaled = self.scaler.transform(X)
@@ -97,8 +117,48 @@ class AegisBridge:
         with open(log_file, "a") as f:
             f.write(json.dumps(entry) + "\n")
 
+    def log_detection(self, src_ip, dst_port, prediction, confidence, label, action="ALLOW"):
+        """
+        Persist a detection result to the local JSONL log.
+        This is called for EVERY prediction (benign + attack) so the dashboard
+        can show live traffic, not only alerts.
+        """
+        from datetime import datetime
+        entry = {
+            "timestamp": datetime.now().isoformat(),
+            "src_ip": str(src_ip),
+            "dst_port": int(dst_port),
+            "prediction": int(prediction),
+            "confidence": round(float(confidence), 3),
+            "label": int(prediction),
+            "action": action,
+        }
+        self._persist_local(config.DETECTION_LOG_FILE, entry)
+
+    def _post_async(self, url, payload, fallback_entry):
+        """
+        Fire-and-forget POST to the dashboard.
+        If the dashboard is reachable the entry is pushed immediately;
+        otherwise it will still appear via the local JSONL log (already written).
+        """
+        def _do_post():
+            try:
+                req = urllib.request.Request(
+                    url,
+                    method="POST",
+                    data=json.dumps(payload).encode("utf-8"),
+                    headers={"Content-Type": "application/json"},
+                )
+                urllib.request.urlopen(req, timeout=0.3)
+            except Exception as e:
+                # Local log is already written; no need to duplicate on timeout.
+                pass
+
+        t = threading.Thread(target=_do_post, daemon=True)
+        t.start()
+
     def dispatch_alert(self, src_ip, scan_type, confidence, dst_port=None, honeypot_flag=0):
-        """POST an alert to the Flask dashboard. Falls back to local log if dashboard is offline."""
+        """POST an alert to the Flask dashboard asynchronously."""
         from datetime import datetime
         alert = {
             "timestamp": datetime.now().isoformat(),
@@ -111,46 +171,14 @@ class AegisBridge:
             "action": "ALERT",
             "label": 1,
         }
-        try:
-            payload = json.dumps(alert).encode("utf-8")
-            req = urllib.request.Request(
-                f"{self.dashboard_url}/api/alert",
-                method="POST",
-                data=payload,
-                headers={"Content-Type": "application/json"},
-            )
-            urllib.request.urlopen(req, timeout=3.0)
-            return True
-        except Exception as e:
-            print(f"[BRIDGE] Dashboard dispatch failed, writing locally: {e}")
-            self._persist_local(config.DETECTION_LOG_FILE, alert)
-            return False
+        self._post_async(f"{self.dashboard_url}/api/alert", alert, alert)
+        return True
 
     def dispatch_block(self, src_ip, confidence=1.0):
-        """POST a block request to the Flask dashboard. Falls back to local log if offline."""
-        from datetime import datetime
-        entry = {
-            "timestamp": datetime.now().isoformat(),
-            "src_ip": src_ip,
-            "action": "BLOCK",
-            "prediction": 1,
-            "confidence": round(float(confidence), 3),
-            "label": 1,
-        }
-        try:
-            payload = json.dumps({"ip": src_ip, "confidence": confidence}).encode("utf-8")
-            req = urllib.request.Request(
-                f"{self.dashboard_url}/api/block",
-                method="POST",
-                data=payload,
-                headers={"Content-Type": "application/json"},
-            )
-            urllib.request.urlopen(req, timeout=3.0)
-            return True
-        except Exception as e:
-            print(f"[BRIDGE] Block dispatch failed, writing locally: {e}")
-            self._persist_local(config.DETECTION_LOG_FILE, entry)
-            return False
+        """POST a block request to the Flask dashboard asynchronously."""
+        payload = {"ip": src_ip, "confidence": confidence}
+        self._post_async(f"{self.dashboard_url}/api/block", payload, None)
+        return True
 
     def run_csv(self, csv_path, verbose=True, dry_run=False):
         """
@@ -183,11 +211,25 @@ class AegisBridge:
             }
             results.append(result)
 
+            # Determine action label for the detection log
+            if pred == 0:
+                action = "ALLOW"
+            elif conf >= config.CONFIDENCE_THRESHOLD:
+                action = "BLOCK"
+            elif conf >= config.ALERT_THRESHOLD:
+                action = "ALERT"
+            else:
+                action = "MONITOR"
+
             if verbose:
-                status = "ALERT" if pred == 1 else "benign"
+                status = action if pred == 1 else "benign"
                 print(f"  [{status}] {src_ip}:{dst_port} -> {result['label']} ({conf:.1%})")
 
-            # Dispatch to dashboard (unless dry-run)
+            # Always log the detection result so the dashboard shows live traffic
+            if not dry_run:
+                self.log_detection(src_ip, dst_port, pred, conf, pred, action=action)
+
+            # Dispatch to dashboard for attack traffic above thresholds
             if not dry_run and pred == 1 and conf >= config.ALERT_THRESHOLD:
                 self.dispatch_alert(
                     src_ip=src_ip,

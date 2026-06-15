@@ -1,4 +1,5 @@
 import os
+import sys
 import argparse
 import pandas as pd
 import numpy as np
@@ -8,32 +9,40 @@ from config import FEATURES
 # Resolve project root so default model/scaler paths point to the shared artifacts
 PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+# Import shared preprocessing utilities
+sys.path.insert(0, os.path.dirname(__file__))
+from preprocessing_utils import load_preprocessing_params, apply_preprocessing
+
 
 def load_model(path):
     return joblib.load(path)
 
 
-def preprocess(df, scaler):
+def preprocess(df, scaler, preprocessing_params=None):
     # Strip spaces from columns
     df.columns = [col.strip() for col in df.columns]
-    
+
     # Check if we have the needed features, else try to create them (except distinct/ttl)
     missing = [f for f in FEATURES if f not in df.columns]
     if missing:
         raise ValueError(f"Missing features in input CSV: {missing}")
-        
+
     X = df[FEATURES].copy()
-    
+
+    # Apply the SAME preprocessing used during training (median impute, IQR cap, log1p)
+    if preprocessing_params is not None:
+        X = apply_preprocessing(X, preprocessing_params)
+    else:
+        # Fallback: basic cleaning only (not recommended)
+        X = X.replace([np.inf, -np.inf], np.nan)
+        X = X.fillna(X.median())
+
     # Add placeholders if they don't exist in live traffic CSV
     if 'shadow_node_interaction' not in X.columns:
         X['shadow_node_interaction'] = 0
     if 'mtd_port_delta' not in X.columns:
         X['mtd_port_delta'] = 0
-        
-    # Replace inf and fill NaN
-    X = X.replace([np.inf, -np.inf], np.nan)
-    X = X.fillna(X.median())
-    
+
     # Scale
     if scaler:
         X_scaled = scaler.transform(X)
@@ -67,6 +76,14 @@ def main():
     if not os.path.exists(scaler_path):
         raise FileNotFoundError(f"Scaler not found: {scaler_path}. The model requires the saved StandardScaler.")
 
+    preprocessing_params_path = os.path.join(PROJECT_ROOT, "models", "saved", "preprocessing.json")
+    preprocessing_params = None
+    if os.path.exists(preprocessing_params_path):
+        print(f"Loading preprocessing params from: {preprocessing_params_path}")
+        preprocessing_params = load_preprocessing_params(preprocessing_params_path)
+    else:
+        print(f"Warning: Preprocessing params not found at {preprocessing_params_path}. Predictions may be inaccurate.")
+
     print(f"Loading scaler from: {scaler_path}")
     scaler = load_model(scaler_path)
 
@@ -76,7 +93,7 @@ def main():
     print(f"Reading input CSV: {args.input}")
     df = pd.read_csv(args.input)
 
-    X_scaled = preprocess(df, scaler)
+    X_scaled = preprocess(df, scaler, preprocessing_params)
 
     print("Running prediction...")
     preds = model.predict(X_scaled)

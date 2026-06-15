@@ -1,0 +1,6 @@
+Source IP,Destination Port,Flow Duration,Total Fwd Packets,SYN Flag Count,RST Flag Count,ACK Flag Count,Flow IAT Mean,Bwd Packet Length Mean,Init_Win_bytes_forward
+192.168.100.50,84,44,1,0,0,0,44.0,6.0,29200
+192.168.100.50,4449,54,1,0,0,0,54.0,6.0,29200
+192.168.100.50,12345,27,1,0,0,0,27.0,6.0,29200
+192.168.100.50,4125,52,1,0,0,0,52.0,6.0,1024
+192.168.100.50,1984,32,1,0,0,0,32.0,6.0,29200

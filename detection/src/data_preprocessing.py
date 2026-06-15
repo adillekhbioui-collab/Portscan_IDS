@@ -4,6 +4,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import seaborn as sns
 from config import FEATURES
+from preprocessing_utils import compute_preprocessing_params
 
 print("==========================")
 print("Loading Dataset")
@@ -32,6 +33,12 @@ print("\nClasses :")
 print(df["Label"].value_counts())
 
 os.makedirs("../results", exist_ok=True)
+
+# Save preprocessing parameters for inference consistency
+# (computed from the cleaned-but-not-yet-transformed data)
+preprocessing_params_path = "../../models/saved/preprocessing.json"
+compute_preprocessing_params(df, FEATURES, output_path=preprocessing_params_path)
+print(f"Preprocessing parameters saved to {preprocessing_params_path}")
 
 # 1. Class Distribution Plot
 plt.figure(figsize=(8,5))
