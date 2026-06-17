@@ -1,0 +1,437 @@
+% ============================================================
+%  Conception de l'Architecture
+%  Project: AEGIS Entropy — AI-Based Port Scan Detection
+%  Updated: June 2026 (aligned with final report)
+%  Approach: problem-solution traceability
+% ============================================================
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{longtable}
+
+\geometry{margin=2.5cm}
+
+% --- Colors ---
+\definecolor{sectionblue}{RGB}{15, 23, 42}
+\definecolor{accentcyan}{RGB}{6, 182, 212}
+\definecolor{accentgreen}{RGB}{16, 185, 129}
+\definecolor{accentred}{RGB}{239, 68, 68}
+
+\titleformat{\section}
+  {\large\bfseries\color{sectionblue}}
+  {\thesection.}{0.5em}{}[\vspace{-0.5em}\textcolor{accentcyan}{\rule{\textwidth}{0.4pt}}]
+\titleformat{\subsection}
+  {\normalsize\bfseries\color{sectionblue}}
+  {\thesubsection.}{0.5em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{gray}{Architecture — AEGIS Entropy}}
+\fancyhead[R]{\small\textcolor{gray}{AI Module — S2}}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+\newcommand{\problem}{\textcolor{accentred}{\textbf{Probl\`{e}me : }}}
+\newcommand{\answer}{\textcolor{accentgreen}{\textbf{R\'{e}ponse : }}}
+
+\begin{document}
+
+\begin{center}
+  {\Large\bfseries Conception de l'Architecture}\\[0.6em]
+  {\large AEGIS Entropy}\\[0.3em]
+  {\large Syst\`{e}me de D\'{e}tection de Port Scan\\[0.2em]
+   par Apprentissage Automatique et D\'{e}fense Active}\\[1.2em]
+  \begin{tabular}{rl}
+    \textbf{Module :}  & Intelligence Artificielle --- Semestre 2 \\
+    \textbf{\'{E}quipe :} & 5 membres (Ing\'{e}nierie --- ENSA K\'{e}nitra) \\
+    \textbf{Encadrant :}  & Pr.\ Aniss Moumen \\
+    \textbf{Date :}    & Juin 2026 \\
+  \end{tabular}
+\end{center}
+
+\vspace{1em}
+
+% ============================================================
+\section{Rappel de la probl\'{e}matique}
+
+La d\'{e}tection du port scanning --- premi\`{e}re phase de reconnaissance de
+la quasi-totalit\'{e} des cyberattaques --- reste un d\'{e}fi op\'{e}rationnel
+pour les \'{e}quipes SOC. Les syst\`{e}mes actuels souffrent de quatre lacunes
+identifi\'{e}es lors de la phase de conception du projet :
+
+\begin{enumerate}[nosep,leftmargin=1.5em]
+  \item \textbf{C\'{e}cit\'{e} face aux scans furtifs :}
+        les IDS bas\'{e}s sur signatures (Snort, Suricata) appliquent des seuils
+        fixes que les attaquants contournent en espa\c{c}ant leurs sondes.
+  \item \textbf{Taux de faux positifs \'{e}lev\'{e} :}
+        le trafic l\'{e}gitime d\'{e}clenche fr\'{e}quemment les m\^{e}mes
+        signatures que les scans malveillants, noyant les analystes sous des
+        milliers d'alertes par jour.
+  \item \textbf{Absence de profilage comportemental :}
+        les outils classiques traitent chaque paquet isol\'{e}ment, sans analyser
+        les motifs temporels et statistiques du trafic par adresse source.
+  \item \textbf{R\'{e}ponse manuelle et lente :}
+        m\^{e}me lorsqu'une menace est d\'{e}tect\'{e}e, le blocage d\'{e}pend
+        de l'intervention humaine, avec un d\'{e}lai de r\'{e}action trop long
+        pour contenir une attaque en cours.
+\end{enumerate}
+
+Ces constats ont \'{e}t\'{e} valid\'{e}s par quatre entretiens semi-directifs
+conduits aupr\`{e}s d'\'{e}tudiants en ing\'{e}nierie r\'{e}seaux et
+cybers\'{e}curit\'{e}. Leurs retours confirment que la surveillance manuelle
+est insoutenable, que les faux positifs constituent un point de douleur majeur,
+et qu'un syst\`{e}me capable d'apprentissage comportemental avec r\'{e}ponse
+autonome gradu\'{e}e r\'{e}pond \`{a} un besoin r\'{e}el.
+
+% ============================================================
+\section{Exigences issues de la probl\'{e}matique}
+
+De cette probl\'{e}matique d\'{e}coulent les exigences fonctionnelles et
+non-fonctionnelles que l'architecture doit satisfaire :
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabularx}{\textwidth}{c L{4cm} X}
+\toprule
+\textbf{R\'{e}f.} & \textbf{Exigence} & \textbf{Justification} \\
+\midrule
+E1 & D\'{e}tection temps-r\'{e}el avec F1 $\geq$ 88\% & Les IDS classiques
+    produisent trop de faux positifs et manquent les scans furtifs. \\
+E2 & Apprentissage comportemental & Les r\`{e}gles statiques ne capturent pas
+    les motifs temporels et statistiques du trafic. \\
+E3 & R\'{e}ponse autonome gradu\'{e}e & L'intervention humaine est trop lente
+    ($>$ 15 secondes) ; le blocage automatique doit \^{e}tre proportionnel
+    au niveau de confiance de la d\'{e}tection. \\
+E4 & Tableau de bord SOC temps-r\'{e}el & Les analystes doivent visualiser
+    les scanners actifs, les scores de confiance et les actions de d\'{e}fense
+    en cours. \\
+E5 & Explicabilit\'{e} des d\'{e}cisions & Les alertes doivent \^{e}tre
+    justifi\'{e}es (features ayant contribu\'{e} \`{a} la classification)
+    pour permettre la validation humaine. \\
+E6 & Isolation des environnements & L'entra\^{i}nement et le d\'{e}ploiement
+    doivent fonctionner dans un laboratoire VirtualBox isol\'{e}
+    (192.168.100.0/24) sans connectivit\'{e} externe. \\
+\bottomrule
+\end{tabularx}
+\caption{Exigences fonctionnelles d\'{e}riv\'{e}es de la probl\'{e}matique.}
+\label{tab:exigences}
+\end{table}
+
+% ============================================================
+\section{Vue d'ensemble de l'architecture}
+
+L'architecture AEGIS Entropy est structur\'{e}e en \textbf{trois couches}
+principales, compl\'{e}t\'{e}es par une couche d'observabilit\'{e} :
+
+\begin{center}
+\small
+\begin{tabular}{c}
+\textbf{[Capture]} $\longrightarrow$
+\textbf{[D\'{e}tection ML]} $\longrightarrow$
+\textbf{[R\'{e}ponse Active]} \\
+\hspace{3cm} $\downarrow$ \\
+\hspace{3cm} \textbf{[Observabilit\'{e} --- Dashboard SOC]}
+\end{tabular}
+\end{center}
+
+\vspace{0.5em}
+\noindent Le flux de donn\'{e}es complet est le suivant :
+
+\begin{quote}
+\small
+\texttt{[Trafic r\'{e}seau / Nmap XML]}
+$\rightarrow$
+\texttt{[Capture Layer --- Scapy, BPF, 10s/60s fen\^{e}tres]}
+$\rightarrow$
+\texttt{[Feature Extractor --- 9 features + 2 placeholders]}
+$\rightarrow$
+\texttt{[Bridge --- Load scaler.pkl, load rf\_model.pkl, classify]}
+$\rightarrow$
+\texttt{[Severity Mapping --- LOW / MEDIUM / HIGH]}
+$\rightarrow$
+\texttt{[Deception : MTD + Honeypot] + [Dashboard : Socket.IO alert]}
+\end{quote}
+
+Les sections suivantes d\'{e}crivent chaque couche en tra\c{c}ant explicitement
+le lien entre le probl\`{e}me identifi\'{e} au \S1 et la solution architecturale
+adopt\'{e}e.
+
+% ============================================================
+\section{Couche Capture --- de l'inspection manuelle \`{a} l'agr\'{e}gation automatis\'{e}e}
+
+\problem Les IDS classiques traitent chaque paquet isol\'{e}ment et ne
+disposent pas de m\'{e}canisme d'agr\'{e}gation temporelle. Les scans furtifs
+\`{a} bas d\'{e}bit passent sous les seuils parce que les r\`{e}gles statiques
+ne consid\`{e}rent pas l'historique du trafic par adresse source.
+
+\answer La couche Capture remplace l'inspection ponctuelle par une
+\textbf{agr\'{e}gation par fen\^{e}tre temporelle glissante}. Deux granularit\'{e}s
+sont utilis\'{e}es :
+
+\begin{itemize}[nosep,leftmargin=1.5em]
+  \item \textbf{Fen\^{e}tre de 10 secondes} pour la d\'{e}tection des scans rapides
+        et agressifs.
+  \item \textbf{Fen\^{e}tre de 60 secondes} pour l'identification des scans lents
+        et furtifs (low-and-slow).
+\end{itemize}
+
+\noindent Le module utilise Scapy avec un filtre BPF pour capturer le trafic
+TCP/UDP sur l'interface r\'{e}seau. En mode hors-ligne (d\'{e}mo), des fichiers
+Nmap XML pr\'{e}-captur\'{e}s sont utilis\'{e}s comme source, garantissant la
+reproductibilit\'{e} de la d\'{e}monstration. Dix profils de scan Nmap ont
+\'{e}t\'{e} g\'{e}n\'{e}r\'{e}s, couvrant des dur\'{e}es de 4.66 secondes
+(scan rapide) \`{a} 505 secondes (scan furtif).
+
+L'environnement de capture est un laboratoire VirtualBox isol\'{e} :
+Kali Linux (192.168.100.10) en attaquant, Ubuntu Server (192.168.100.20)
+en cible, exposant SSH (port 22) et HTTP (port 80).
+
+\bigskip
+\noindent \textbf{Tra\c{c}abilit\'{e} :} cette couche r\'{e}pond aux exigences
+\textbf{E1} (donn\'{e}es de qualit\'{e} pour la d\'{e}tection) et
+\textbf{E6} (isolation du laboratoire).
+
+% ============================================================
+\section{Couche D\'{e}tection ML --- des signatures statiques \`{a} l'apprentissage comportemental}
+
+\problem Les IDS bas\'{e}s sur signatures (Snort, Suricata) comparent le trafic
+observ\'{e} \`{a} une base de motifs connus. Cette approche est aveugle face aux
+scans polymorphes, aux attaques zero-day, et aux outils de reconnaissance
+personnalis\'{e}s. De plus, elle n\'{e}cessite une mise \`{a} jour manuelle
+continue des signatures.
+
+\answer La couche D\'{e}tection remplace les r\`{e}gles statiques par
+\textbf{trois mod\`{e}les d'apprentissage automatique compl\'{e}mentaires}
+fonctionnant sur 11 caract\'{e}ristiques de flux :
+
+\subsection{Pipeline de pr\'{e}traitement}
+
+Avant classification, les flux subissent un pipeline \`{a} quatre \'{e}tapes
+avec contr\^{o}le strict de non-fuite de donn\'{e}es (\textit{anti-leakage}) :
+
+\begin{enumerate}[nosep,leftmargin=1.5em]
+  \item \textbf{Nettoyage + imputation} (m\'{e}diane, robuste aux outliers).
+  \item \textbf{Capping IQR} (winsorisation) --- pr\'{e}serve tous les
+        enregistrements d'attaque.
+  \item \textbf{Correction log1p} pour les 5 features asym\'{e}triques
+        ($|\text{skew}| > 1.0$).
+  \item \textbf{StandardScaler + SMOTE} --- le scaler est ajust\'{e}
+        \textbf{exclusivement} sur l'ensemble d'entra\^{i}nement.
+\end{enumerate}
+
+\subsection{Les trois mod\`{e}les}
+
+\begin{itemize}[nosep,leftmargin=1.5em]
+  \item \textbf{Random Forest} (100 arbres, bagging) --- classifieur supervis\'{e}
+        principal. Robuste aux donn\'{e}es tabulaires non-lin\'{e}aires, fournit
+        les scores d'importance des features (explicabilit\'{e}, exigence E5).
+  \item \textbf{XGBoost} (100 estimateurs, \texttt{max\_depth=6}, gradient boosting)
+        --- benchmark de comparaison pour v\'{e}rifier que Random Forest n'est pas
+        sous-performant par simplicit\'{e}.
+  \item \textbf{Isolation Forest} (\texttt{contamination='auto'}) --- d\'{e}tecteur
+        non supervis\'{e} destin\'{e} \`{a} la d\'{e}tection des scans lents et
+        inconnus en production. L'\'{e}chec sur CICIDS2017 (F1 = 9.46\%) est
+        document\'{e} et expliqu\'{e} par le \textbf{paradoxe de l'anomalie
+        majoritaire} : PortScan = 55.48\% des donn\'{e}es.
+\end{itemize}
+
+Tous les mod\`{e}les supervis\'{e}s sont valid\'{e}s par \textbf{10-fold
+stratified cross-validation}. Les r\'{e}sultats sur l'ensemble de test
+(57\,294 flux) sont :
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Mod\`{e}le} & \textbf{F1} & \textbf{FPR} & \textbf{AUC-ROC} & \textbf{Erreurs} \\
+\midrule
+Random Forest & 99.92\% & 0.11\% & 0.9997 & 51 / 57\,294 \\
+XGBoost       & 99.92\% & 0.11\% & 0.9999 & 49 / 57\,294 \\
+Isolation Forest & 9.46\% & 53.53\% & --- & 43\,184 / 57\,294 \\
+\bottomrule
+\end{tabular}
+\caption{Performances des mod\`{e}les sur l'ensemble de test.}
+\end{table}
+
+\subsection{Le module Bridge --- middleware d'int\'{e}gration}
+
+Le Bridge (\texttt{bridge/bridge.py}) connecte la capture \`{a} la d\'{e}tection.
+Il charge le scaler entra\^{i}n\'{e} (\texttt{scaler.pkl}), applique le
+pr\'{e}traitement sur les features entrantes, charge le mod\`{e}le Random Forest
+(\texttt{rf\_model.pkl}), produit une classification et un score de confiance,
+et dispatche le r\'{e}sultat vers le dashboard et le sous-syst\`{e}me de d\'{e}fense.
+
+\bigskip
+\noindent \textbf{Tra\c{c}abilit\'{e} :} cette couche r\'{e}pond aux exigences
+\textbf{E1} (d\'{e}tection avec F1 $\geq$ 88\%), \textbf{E2} (apprentissage
+comportemental), et \textbf{E5} (explicabilit\'{e} via feature importance).
+
+% ============================================================
+\section{Couche R\'{e}ponse Active --- du blocage manuel \`{a} la d\'{e}fense autonome gradu\'{e}e}
+
+\problem Dans un SOC classique, la d\'{e}tection d\'{e}clenche une alerte,
+mais la r\'{e}ponse d\'{e}pend d'un analyste humain qui doit manuellement
+bloquer l'IP source. Ce d\'{e}lai --- souvent plusieurs minutes --- permet
+\`{a} l'attaquant de compl\'{e}ter sa reconnaissance avant toute contre-mesure.
+
+\answer La couche R\'{e}ponse Active impl\'{e}mente une \textbf{d\'{e}fense
+gradu\'{e}e et autonome} bas\'{e}e sur le score de confiance du mod\`{e}le ML :
+
+\subsection{Cartographie de s\'{e}v\'{e}rit\'{e}}
+
+\begin{table}[h!]
+\centering
+\begin{tabular}{l l l}
+\toprule
+\textbf{Confiance} & \textbf{S\'{e}v\'{e}rit\'{e}} & \textbf{Action autonome} \\
+\midrule
+$<$ 0.85      & LOW    & Redirection honeypot uniquement (surveillance passive) \\
+0.85 -- 0.95  & MEDIUM & Redirection honeypot + blacklist IP (UFW drop) \\
+$>$ 0.95      & HIGH   & Redirection + blacklist + mutation de port (MTD) \\
+\bottomrule
+\end{tabular}
+\caption{Cartographie confiance $\rightarrow$ action.}
+\end{table}
+
+\subsection{Modules de d\'{e}fense}
+
+\begin{itemize}[nosep,leftmargin=1.5em]
+  \item \textbf{Core Deception} --- 5 profils honeypot ; leurres l\'{e}gers
+        \'{e}mulant SSH, HTTP, FTP ; active le flag
+        \texttt{shadow\_node\_interaction=1} en production.
+  \item \textbf{Network Mutator (MTD)} --- rotation dynamique des ports de
+        service via iptables ; thread d'arri\`{e}re-plan avec PRNG et p\'{e}riodes
+        de gr\^{a}ce.
+  \item \textbf{Traffic Shaper} --- SYN-ACK tarpit et sabotage MSS pour
+        ralentir les scanners sans les bloquer.
+  \item \textbf{IP Manager} --- blackhole kernel + UFW deny avec
+        d\'{e}blocage automatique bas\'{e} sur TTL.
+\end{itemize}
+
+\subsection{R\'{e}sultats empiriques}
+
+\begin{itemize}[nosep,leftmargin=1.5em]
+  \item \textbf{+420\%} de temps de reconnaissance pour l'attaquant
+        (scan 5$\times$ plus lent).
+  \item \textbf{85\% $\rightarrow$ 20\%} de succ\`{e}s de fingerprinting OS
+        (l'attaquant ne peut plus identifier le syst\`{e}me cible).
+  \item \textbf{+2.3\%} de gain en accuracy ML via la boucle de retour honeypot
+        (le flag \texttt{shadow\_node\_interaction} am\'{e}liore la d\'{e}tection
+        en production).
+\end{itemize}
+
+\bigskip
+\noindent \textbf{Tra\c{c}abilit\'{e} :} cette couche r\'{e}pond \`{a} l'exigence
+\textbf{E3} (r\'{e}ponse autonome gradu\'{e}e).
+
+% ============================================================
+\section{Couche Observabilit\'{e} --- de l'alerte opaque au tableau de bord SOC}
+
+\problem Les outils classiques g\'{e}n\`{e}rent des milliers de faux positifs
+par jour sans fournir de contexte exploitable. Les analystes perdent du temps
+\`{a} trier des alertes sans comprendre pourquoi elles ont \'{e}t\'{e} d\'{e}clench\'{e}es.
+
+\answer La couche Observabilit\'{e} fournit un \textbf{tableau de bord SOC
+temps-r\'{e}e}l bas\'{e} sur Flask + Socket.IO + D3.js. Trois endpoints POST
+re\c{c}oivent les \'{e}v\'{e}nements en continu :
+
+\begin{itemize}[nosep,leftmargin=1.5em]
+  \item \texttt{POST /api/alert} --- \'{e}v\'{e}nements de d\'{e}tection
+        (bridge $\rightarrow$ dashboard).
+  \item \texttt{POST /api/block} --- demandes de blocage IP.
+  \item \texttt{POST /api/honeypot\_event} --- \'{e}v\'{e}nements de d\'{e}ception
+        (modules de d\'{e}fense $\rightarrow$ dashboard).
+\end{itemize}
+
+\noindent Chaque \'{e}v\'{e}nement est \'{e}mis en temps r\'{e}el vers tous les
+clients connect\'{e}s via Socket.IO, et \'{e}galement sauvegard\'{e} localement
+dans \texttt{detection\_logs.json} (format JSONL). Si le dashboard est hors-ligne,
+le bridge \'{e}crit les \'{e}v\'{e}nements localement sans perte de donn\'{e}es.
+
+Le dashboard fonctionne \textbf{enti\`{e}rement hors-ligne} sur Windows, sans
+d\'{e}pendance Linux.
+
+\bigskip
+\noindent \textbf{Tra\c{c}abilit\'{e} :} cette couche r\'{e}pond \`{a} l'exigence
+\textbf{E4} (tableau de bord temps-r\'{e}el).
+
+% ============================================================
+\section{R\'{e}sum\'{e} : tra\c{c}abilit\'{e} probl\`{e}me $\rightarrow$ architecture}
+
+Le tableau ci-dessous synth\'{e}tise la correspondance entre chaque exigence
+issue de la probl\'{e}matique et la couche architecturale qui y r\'{e}pond.
+
+\begin{table}[h!]
+\centering
+\small
+\begin{tabularx}{\textwidth}{l L{4cm} X}
+\toprule
+\textbf{R\'{e}f.} & \textbf{Exigence} & \textbf{R\'{e}ponse architecturale} \\
+\midrule
+E1 & D\'{e}tection temps-r\'{e}el,
+     F1 $\geq$ 88\% &
+     Couche D\'{e}tection ML : RF + XGBoost entra\^{i}n\'{e}s sur 11 features,
+     10-fold CV, F1 = 99.92\%, FPR = 0.11\%. \\
+E2 & Apprentissage comportemental &
+     Couche Capture (agr\'{e}gation par fen\^{e}tre temporelle) +
+     Couche D\'{e}tection (3 mod\`{e}les ML, pipeline de pr\'{e}traitement). \\
+E3 & R\'{e}ponse autonome gradu\'{e}e &
+     Couche R\'{e}ponse Active : cartographie de s\'{e}v\'{e}rit\'{e},
+     4 modules de d\'{e}fense (Core Deception, MTD, Traffic Shaper, IP Manager). \\
+E4 & Tableau de bord SOC temps-r\'{e}el &
+     Couche Observabilit\'{e} : Flask + Socket.IO, 3 endpoints POST,
+     dashboard D3.js, logs JSONL avec fallback local. \\
+E5 & Explicabilit\'{e} des d\'{e}cisions &
+     Couche D\'{e}tection : feature importance (Random Forest), scores de
+     confiance affich\'{e}s dans le dashboard. \\
+E6 & Isolation du laboratoire &
+     Couche Capture : VirtualBox, r\'{e}seau 192.168.100.0/24 isol\'{e},
+     mode offline pour d\'{e}mo sur Windows. \\
+\bottomrule
+\end{tabularx}
+\caption{Tra\c{c}abilit\'{e} compl\`{e}te : chaque exigence issue de la
+probl\'{e}matique trouve sa r\'{e}ponse dans une couche de l'architecture.}
+\label{tab:tracabilite}
+\end{table}
+
+% ============================================================
+\section{M\'{e}thodologie et cycle de vie}
+
+L'architecture a \'{e}t\'{e} con\c{c}ue selon le cadre \textbf{CRISP-DM}
+(\textit{Cross-Industry Standard Process for Data Mining}), qui structure le
+projet en six phases :
+
+\begin{enumerate}[nosep,leftmargin=1.5em]
+  \item \textbf{Business Understanding} --- identification du besoin m\'{e}tier
+        (r\'{e}duire la fatigue des analystes SOC), entretiens utilisateurs,
+        d\'{e}finition des cibles quantitatives.
+  \item \textbf{Data Understanding} --- exploration du dataset CICIDS2017,
+        analyse de la distribution des classes, cartographie des features.
+  \item \textbf{Data Preparation} --- pipeline de pr\'{e}traitement \`{a} 4
+        \'{e}tapes avec contr\^{o}le anti-leakage.
+  \item \textbf{Modeling} --- entra\^{i}nement et validation crois\'{e}e de
+        RF, XGBoost et Isolation Forest.
+  \item \textbf{Evaluation} --- m\'{e}triques sur l'ensemble de test,
+        matrices de confusion, analyse du paradoxe IF.
+  \item \textbf{Deployment} --- int\'{e}gration via le Bridge, dashboard SOC,
+        d\'{e}fense active avec MTD et honeypot.
+\end{enumerate}
+
+Le d\'{e}tail complet est document\'{e} dans le rapport final AEGIS Entropy
+(9 chapitres, Juin 2026).
+
+\end{document}

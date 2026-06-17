@@ -1,0 +1,172 @@
+% ============================================================
+%  Guide d'Entretien — Analyse des Vulnérabilités Réseaux
+%  IA & Automatisation de la Détection d'Intrusions
+%  Projet Académique — Module : Intelligence Artificielle
+% ============================================================
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\newcommand{\og}{\guillemotleft\,}
+\newcommand{\fg}{\,\guillemotright}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{amssymb}
+
+\geometry{margin=2.5cm, top=3cm, bottom=3cm}
+
+% --- Column types ---
+\newcolumntype{B}[1]{>{\bfseries\raggedright\arraybackslash}p{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% --- Section formatting ---
+\titleformat{\section}
+  {\normalfont\large\bfseries}{\thesection.}{0.6em}{}
+\titlespacing{\section}{0pt}{14pt}{6pt}
+
+% --- Header/Footer ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Guide d'Entretien --- Vuln\'{e}rabilit\'{e}s R\'{e}seaux}
+\fancyhead[R]{\small Module : Intelligence Artificielle}
+\fancyfoot[C]{\small Projet Acad\'{e}mique \quad Page \thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\hypersetup{colorlinks=false, hidelinks}
+
+\setlength{\parskip}{6pt}
+\setlength{\parindent}{0pt}
+\setlength{\tabcolsep}{6pt}
+
+\begin{document}
+
+% ============================================================
+%  HEADER BLOCK
+% ============================================================
+\begin{center}
+  {\Large\bfseries Guide d'Entretien}\\[0.4em]
+  {\large Analyse des Vuln\'{e}rabilit\'{e}s R\'{e}seaux}\\[0.2em]
+  {\normalsize IA \& Automatisation de la D\'{e}tection d'Intrusions}\\[1em]
+\end{center}
+
+\begin{tabular}{@{}B{3cm} L{10cm}@{}}
+  \hline
+  Module    & Intelligence Artificielle \\
+  \hline
+  Statut    & Projet Acad\'{e}mique \\
+  \hline
+  \'{E}tudiant 1 & El Kartouti Anas \\
+  \hline
+  \'{E}tudiant 2 & Lekhbioui Adil \\
+  \hline
+  \'{E}tudiant 3 & Moulay Anas \\
+  \hline
+  \'{E}tudiant 4 & Hammoubel El Yazid \\
+  \hline
+  \'{E}tudiant 5 & Nafia Khadija \\
+  \hline
+\end{tabular}
+
+\vspace{1.2em}
+
+% ============================================================
+%  1. PHASE D'INTRODUCTION
+% ============================================================
+\section{Phase d'Introduction (Mise en situation)}
+
+\textbf{Q1.1 :} \og{} Pourriez-vous vous pr\'{e}senter bri\`{e}vement et d\'{e}crire votre r\^{o}le ainsi que le type
+d'architecture r\'{e}seau (LAN, Cloud, r\'{e}seaux hybrides) que vous g\'{e}rez ou utilisez au
+quotidien~? \fg{}
+
+\bigskip
+
+\textbf{Q1.2 :} \og{} De mani\`{e}re g\'{e}n\'{e}rale, quels sont les d\'{e}fis ou les incidents majeurs auxquels vous
+\^{e}tes le plus fr\'{e}quemment confront\'{e} pour garantir la disponibilit\'{e} et la s\'{e}curit\'{e} de
+cette infrastructure~? \fg{}
+
+% ============================================================
+%  2. PHASE DE DÉVELOPPEMENT
+% ============================================================
+\section{Phase de D\'{e}veloppement (Exploration du probl\`{e}me cible)}
+
+\textbf{Q2.1 :} \og{} Pourriez-vous me d\'{e}crire en d\'{e}tail une exp\'{e}rience r\'{e}cente o\`{u} vous avez constat\'{e}
+un comportement suspect, une anomalie de trafic ou une baisse de performance inexpliquée
+sur le r\'{e}seau~? \fg{}
+
+\bigskip
+
+\textbf{Q2.2 :} \og{} Selon votre exp\'{e}rience, lorsque le r\'{e}seau subit ce type de perturbations de mani\`{e}re
+furtive, quelles en sont les causes les plus courantes~? \fg{}
+
+\bigskip
+
+\textbf{Q2.3 :} \og{} Face \`{a} ces anomalies, comment faites-vous la diff\'{e}rence entre une simple panne de
+composant, une inondation de trafic malveillante (DDoS/surcharge), ou une infection par
+un malware interne~? \fg{}
+
+\bigskip
+
+\textbf{Q2.4 :} \og{} Les attaquants proc\`{e}dent souvent par des phases de reconnaissance avant de frapper.
+Comment percevez-vous ou d\'{e}tectez-vous ces tentatives de cartographie silencieuse
+(comme l'exploration de vos services ou les scans de ports) sur votre p\'{e}rim\`{e}tre~? \fg{}
+
+% ============================================================
+%  3. PHASE D'APPROFONDISSEMENT
+% ============================================================
+\section{Phase d'Approfondissement (Limites actuelles et transition vers l'innovation)}
+
+\textbf{Q3.1 :} \og{} Actuellement, quelles proc\'{e}dures, logs ou outils mobilisez-vous pour isoler la cause
+d'une intrusion ou d'un scan, et comment proc\'{e}dez-vous pour bloquer la menace~? \fg{}
+
+\bigskip
+
+\textbf{Q3.2 :} \og{} Quelles sont les limites techniques ou humaines que vous rencontrez avec ces m\'{e}thodes
+actuelles (temps de r\'{e}action, faux positifs, charge de travail)~? \fg{}
+
+\bigskip
+
+\textbf{Q3.3 :} \og{} Face \`{a} la complexit\'{e} des attaques, que penseriez-vous de l'int\'{e}gration d'un mod\`{e}le
+d'Intelligence Artificielle capable d'analyser le trafic en temps r\'{e}el pour d\'{e}tecter de
+mani\`{e}re autonome ces comportements suspects~? \fg{}
+
+\bigskip
+
+\textbf{Q3.4 :} \og{} Pensez-vous qu'un mod\`{e}le IA serait pertinent non seulement pour d\'{e}tecter, mais aussi
+pour intervenir directement sur l'infrastructure (ex~: bloquer une IP, modifier
+dynamiquement l'acc\`{e}s) pour vous faire gagner du temps~? \fg{}
+
+% ============================================================
+%  4. PHASE DE CONCLUSION
+% ============================================================
+\section{Phase de Conclusion (Crit\`{e}res d'acceptabilit\'{e} de la solution)}
+
+\textbf{Q4.1 :} \og{} Pour qu'une solution bas\'{e}e sur l'IA vous soit r\'{e}ellement utile, quelles devraient \^{e}tre
+ses caract\'{e}ristiques principales (ex~: type de tableau de bord, alertes en temps r\'{e}el,
+visibilit\'{e} du r\'{e}seau)~? \fg{}
+
+\bigskip
+
+\textbf{Q4.2 :} \og{} Quelles seraient vos exigences strictes ou vos craintes (ex~: confidentialit\'{e} des flux,
+blocage accidentel d'un trafic l\'{e}gitime) avant d'autoriser une IA \`{a} interagir avec vos
+routeurs/pare-feux~? \fg{}
+
+\bigskip
+
+\textbf{Q4.3 :} \og{} En r\'{e}sum\'{e}, si ce syst\`{e}me intelligent et autonome, garantissant un faible taux
+d'erreur, \'{e}tait d\'{e}ploy\'{e} sur votre infrastructure, seriez-vous pr\^{e}t \`{a} l'adopter dans vos
+op\'{e}rations quotidiennes~? \fg{}
+
+\vspace{2em}
+\noindent\rule{\linewidth}{0.4pt}
+\begin{center}
+  \small Guide d'Entretien --- Module Intelligence Artificielle --- Projet Acad\'{e}mique --- ENSA K\'{e}nitra
+\end{center}
+
+\end{document}

@@ -1,0 +1,899 @@
+% ============================================================
+%  Compte rendu des entretiens
+%  Université Ibn Tofaïl — ENSA Kénitra
+%  Module : Intelligence Artificielle — RST S6
+%  Année universitaire : 2025 / 2026
+% ============================================================
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{hyperref}
+\usepackage{parskip}
+\usepackage{amssymb}
+\usepackage{setspace}
+
+\geometry{margin=2.5cm, top=3cm, bottom=3cm}
+
+\newcolumntype{B}[1]{>{\bfseries\raggedright\arraybackslash}p{#1}}
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+% --- Section formatting ---
+\titleformat{\section}
+  {\normalfont\large\bfseries}{\thesection.}{0.6em}{}
+\titlespacing{\section}{0pt}{16pt}{6pt}
+
+\titleformat{\subsection}
+  {\normalfont\normalsize\bfseries}{\thesubsection.}{0.5em}{}
+\titlespacing{\subsection}{0pt}{10pt}{4pt}
+
+% --- Header/Footer ---
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small Compte rendu des entretiens --- ENSA K\'{e}nitra}
+\fancyhead[R]{\small 2025 / 2026}
+\fancyfoot[C]{\small Page \thepage{} / 18}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\hypersetup{colorlinks=false, hidelinks}
+\setlength{\parskip}{6pt}
+\setlength{\parindent}{0pt}
+\setlength{\tabcolsep}{6pt}
+
+% Guillemets
+\newcommand{\og}{\guillemotleft\,}
+\newcommand{\fg}{\,\guillemotright}
+
+\begin{document}
+
+% ============================================================
+%  TITLE PAGE
+% ============================================================
+\begin{titlepage}
+  \centering
+  \vspace*{1.5cm}
+  {\large Universit\'{e} Ibn Tofa\"{i}l}\\[0.3em]
+  {\normalsize \'{E}cole Nationale des Sciences Appliqu\'{e}es --- K\'{e}nitra}
+  \vspace{1.5cm}
+
+  \rule{\textwidth}{0.8pt}\\[0.6em]
+  {\LARGE\bfseries Compte rendu des entretiens}\\[0.5em]
+  {\large Recueil de t\'{e}moignages et retours d'exp\'{e}rience professionnels}\\[0.4em]
+  \rule{\textwidth}{0.4pt}
+
+  \vspace{1.5cm}
+  \begin{tabular}{@{}ll@{}}
+    \textbf{Module :}          & Intelligence Artificielle \\[5pt]
+    \textbf{Fili\`{e}re :}    & R\'{e}seaux et Syst\`{e}mes de T\'{e}l\'{e}communications --- RST --- S6 \\[5pt]
+    \textbf{Encadrant :}       & Aniss Moumen \\[5pt]
+    \textbf{Membres du groupe :} & Nafia Khadija, El Kartouti Anas, Lekhbioui Adil, \\
+                               & Moulay Anas, Hammoubel El Yazid \\[5pt]
+    \textbf{Ann\'{e}e universitaire :} & 2025 / 2026 \\[5pt]
+    \textbf{Date de remise :}  & Juin 2026 \\
+  \end{tabular}
+
+  \vfill
+  {\small ENSA K\'{e}nitra --- R\'{e}seaux et Syst\`{e}mes de T\'{e}l\'{e}communications}
+\end{titlepage}
+
+% ============================================================
+%  TABLE DES MATIÈRES
+% ============================================================
+\tableofcontents
+\clearpage
+
+% ============================================================
+%  INTRODUCTION
+% ============================================================
+\section*{Introduction}
+\addcontentsline{toc}{section}{Introduction}
+
+Dans le cadre de notre projet de fin de module d'Intelligence Artificielle, nous nous sommes
+int\'{e}ress\'{e}s \`{a} l'utilisation du machine learning pour la d\'{e}tection des cyberattaques, en
+particulier les attaques bas\'{e}es sur le scan de ports. Afin d'enrichir notre approche th\'{e}orique
+et de confronter nos travaux \`{a} la r\'{e}alit\'{e} du terrain, nous avons jug\'{e} utile de rencontrer des
+experts du domaine de la cybers\'{e}curit\'{e} et des r\'{e}seaux.
+
+Ces entretiens avaient pour objectif de mieux comprendre comment les professionnels font
+face \`{a} ce type de menaces dans leur environnement de travail, quels outils et m\'{e}thodes ils
+utilisent, et dans quelle mesure l'intelligence artificielle est aujourd'hui int\'{e}gr\'{e}e dans les
+strat\'{e}gies de d\'{e}fense r\'{e}seau.
+
+Ce rapport regroupe l'ensemble des cinq entretiens r\'{e}alis\'{e}s avec des ing\'{e}nieurs sp\'{e}cialis\'{e}s,
+suivis d'une synth\`{e}se des principaux enseignements tir\'{e}s de ces \'{e}changes.
+
+\clearpage
+
+% ============================================================
+%  ENTRETIEN 1 — HICHAM DACHOUR
+% ============================================================
+\section{Entretien 1 --- Hicham Dachour}
+
+\subsection*{Informations sur l'interlocuteur}
+
+\begin{tabular}{@{}B{4cm} L{10.5cm}@{}}
+  \hline
+  Nom et pr\'{e}nom      & Hicham Dachour \\
+  \hline
+  Poste / Fonction   & Cybersecurity \& Network Engineer $|$ CCNP ENCOR $|$ Fortinet NSE7
+                       Certified (Enterprise Firewall, SD-WAN) $|$ Advanced Infrastructure
+                       Security : WAF \& Load Balancing $|$ Research Scholar : AI/ML
+                       Integration in Cyber Resilience \\
+  \hline
+  Entreprise         & Tuntrust \\
+  \hline
+  Secteur            & Cybers\'{e}curit\'{e} \\
+  \hline
+  Date de l'entretien & 26 avril 2026 \\
+  \hline
+  Lieu / Format      & En ligne --- Google Meet \\
+  \hline
+\end{tabular}
+
+\subsection*{Questions et r\'{e}ponses}
+
+\textbf{Q1. Pr\'{e}sentation et prise de contact}
+
+Bonjour, M. Hicham. J'esp\`{e}re que vous allez bien. Je me pr\'{e}sente : je m'appelle Khadija Nafia.
+Je suis \'{e}tudiante en premi\`{e}re ann\'{e}e du cycle ing\'{e}nieur \`{a} l'\'{E}cole Nationale des Sciences
+Appliqu\'{e}es, sp\'{e}cialit\'{e} R\'{e}seaux et Syst\`{e}mes de T\'{e}l\'{e}communication. Dans le cadre de notre
+projet de fin de module en Intelligence Artificielle, nous travaillons sur la d\'{e}tection des attaques
+r\'{e}seau \`{a} partir de techniques de machine learning. L'objectif de cet entretien est de recueillir
+votre exp\'{e}rience et votre point de vue sur la probl\'{e}matique de la s\'{e}curit\'{e} r\'{e}seau, ainsi que
+sur l'apport potentiel de l'intelligence artificielle dans ce domaine. Je vous remercie une nouvelle
+fois d'avoir accept\'{e} de participer \`{a} cet \'{e}change et pour votre disponibilit\'{e}. Je vous informe
+\'{e}galement que cet entretien sera enregistr\'{e} dans le cadre de notre projet. \^{E}tes-vous \`{a} l'aise
+avec cela ?
+
+\medskip
+\textit{R\'{e}ponse}
+
+Oui, d'accord.
+
+\bigskip
+\textbf{Q2. Parcours et r\^{o}le actuel}
+
+Merci beaucoup. Je m'appelle Hicham Dachraoui. Je suis ing\'{e}nieur en cybers\'{e}curit\'{e} avec plus
+de quatre ans d'exp\'{e}rience dans la conception, l'optimisation et la s\'{e}curisation d'infrastructures
+d'entreprise. Actuellement en poste d'ing\'{e}nieur en cybers\'{e}curit\'{e}, je m\`{e}ne \'{e}galement des
+recherches sur l'utilisation de l'IA dans ce domaine. Je supervise des solutions de s\'{e}curit\'{e}
+avanc\'{e}es, notamment les pare-feux de nouvelle g\'{e}n\'{e}ration (Next-Generation Firewall) et les
+pare-feux applicatifs web (WAF) destin\'{e}s \`{a} prot\'{e}ger les applications publi\'{e}es, ainsi que des
+solutions SIEM (Security Information and Event Management). Les architectures que je g\`{e}re sont
+principalement hybrides, combinant des environnements LAN d'entreprise, des infrastructures
+cloud et des connexions s\'{e}curis\'{e}es via des tunnels VPN point \`{a} point ou site \`{a} site.
+J'interviens \'{e}galement sur des architectures Zero Trust et le d\'{e}ploiement de solutions de centre
+de donn\'{e}es telles que Cisco ACI et Cisco Nexus.
+
+\bigskip
+\textbf{Q3. Principaux d\'{e}fis quotidiens}
+
+Les d\'{e}fis sont nombreux : la r\'{e}duction des menaces avanc\'{e}es telles que les attaques
+zero-day (des attaques pour lesquelles aucun correctif n'existe encore), la gestion du volume
+de journaux et d'alertes, la complexit\'{e} croissante face aux attaques DDoS (Distributed Denial
+of Service), la conformit\'{e} r\'{e}glementaire avec des politiques de s\'{e}curit\'{e} fond\'{e}es sur la norme
+ISO 27001, et la s\'{e}curisation des acc\`{e}s privil\'{e}gi\'{e}s via des m\'{e}canismes comme le MFA
+(Multi-Factor Authentication).
+
+\bigskip
+\textbf{Q4. Comportements inhabituels observ\'{e}s}
+
+Lors des op\'{e}rations de surveillance, nous observons fr\'{e}quemment des scans actifs de ports,
+notamment par l'utilisation de l'outil Nmap, visant une plage d'adresses IP ou un h\^{o}te particulier
+h\'{e}bergeant un site web ou une application. L'attaquant tente de recenser les ports ouverts afin
+de pr\'{e}parer une attaque. La r\'{e}ponse consiste \`{a} appliquer des r\`{e}gles de s\'{e}curit\'{e} via les
+solutions de pare-feu de nouvelle g\'{e}n\'{e}ration, qui permettent de contrer ce type d'attaque.
+
+\bigskip
+\textbf{Q5. Causes les plus fr\'{e}quentes des anomalies}
+
+Les causes les plus fr\'{e}quentes sont : l'activit\'{e} de reconnaissance (scans de ports,
+\'{e}num\'{e}ration des services), les tentatives de force brute, le mouvement lat\'{e}ral au sein du
+syst\`{e}me, l'exploitation de vuln\'{e}rabilit\'{e}s non corrig\'{e}es ou de mauvaises configurations de
+s\'{e}curit\'{e}, l'exfiltration discr\`{e}te de donn\'{e}es via des canaux chiffr\'{e}s (comme le DNS tunneling),
+et les attaques ciblant des syst\`{e}mes industriels ou des services tiers.
+
+\bigskip
+\textbf{Q6. Diff\'{e}rencier une panne technique d'une attaque malveillante}
+
+Une panne technique classique se traduit par une chute brutale du trafic, une absence de flux
+ou une d\'{e}faillance mat\'{e}rielle. On peut la diagnostiquer via un outil de supervision utilisant le
+protocole SNMP (agentless), qui renseigne sur la sant\'{e} des \'{e}quipements : CPU, RAM, stockage
+et temp\'{e}rature. Les attaques malveillantes, quant \`{a} elles, impliquent souvent des commandes
+de contr\^{o}le \`{a} distance ou du phishing. La protection passe par la mise en place d'EDR
+(Endpoint Detection and Response) et de SIEM pour collecter les journaux, analyser les
+incidents et am\'{e}liorer continuellement les playbooks de d\'{e}tection. La sensibilisation du
+personnel est \'{e}galement essentielle pour reconna\^{i}tre les tentatives de phishing.
+
+\bigskip
+\textbf{Q7. D\'{e}tection des scans de ports}
+
+L'analyse des journaux du pare-feu permet d'identifier les tentatives de scan. La surveillance
+des requ\^{e}tes DNS constitue \'{e}galement un indicateur pertinent.
+
+\bigskip
+\textbf{Q8. Outils de surveillance et de s\'{e}curisation}
+
+La d\'{e}tection commence par la solution SIEM, qui assure la corr\'{e}lation des \'{e}v\'{e}nements. Pour
+l'investigation, on peut utiliser Wireshark. La segmentation r\'{e}seau via des VLANs permet
+\'{e}galement de compartimenter le r\'{e}seau et de limiter l'interconnexion entre services distincts.
+
+\bigskip
+\textbf{Q9. Limites des outils actuels}
+
+On observe des faux positifs, des temps de r\'{e}action parfois longs susceptibles de perturber
+le r\'{e}seau, ainsi que des difficult\'{e}s li\'{e}es \`{a} la complexit\'{e} d'int\'{e}gration de ces solutions.
+
+\bigskip
+\textbf{Q10. Apport du machine learning dans la d\'{e}tection des attaques}
+
+L'IA peut aujourd'hui aider les ing\'{e}nieurs \`{a} d\'{e}tecter des menaces en entra\^{i}nant un agent
+capable de d\'{e}tecter et de r\'{e}agir automatiquement --- bloquer ou autoriser un flux. L'ann\'{e}e
+derni\`{e}re, j'ai r\'{e}dig\'{e} un article sur la cr\'{e}ation d'agents IA au niveau des routeurs Cisco pour
+d\'{e}tecter des \'{e}v\'{e}nements BGP, notamment le BGP hijacking, un type d'attaque qui provoque
+un reroutage du trafic. L'utilisation de l'IA peut donc aider les sp\'{e}cialistes \`{a} mieux prot\'{e}ger
+leur infrastructure.
+
+\bigskip
+\textbf{Q11. Blocage automatique par l'IA}
+
+Pas syst\'{e}matiquement. Un blocage automatique permanent n'est pas toujours souhaitable.
+On peut envisager un blocage temporaire (une \`{a} deux heures, par exemple en dehors des
+heures ouver\'{e}es), qui peut \^{e}tre progressivement allong\'{e} si les m\^{e}mes adresses IP
+renouvellent leurs tentatives, puisque les attaquants changent souvent d'adresse IP.
+
+\bigskip
+\textbf{Q12. Fonctionnalit\'{e}s essentielles d'une solution IA}
+
+Une solution IA efficace devrait passer par une phase d'entra\^{i}nement, puis de test, avant la
+mise en production. Elle pourrait inclure un tableau de bord unifi\'{e} avec la g\'{e}olocalisation des
+IP, un syst\`{e}me d'alertes par e-mail ou SMS, l'int\'{e}gration via des API et la gestion des
+politiques de s\'{e}curit\'{e}.
+
+\clearpage
+
+% ============================================================
+%  ENTRETIEN 2 — SOUKAINA NAFIA
+% ============================================================
+\section{Entretien 2 --- Soukaina Nafia}
+
+\subsection*{Informations sur l'interlocuteur}
+
+\begin{tabular}{@{}B{4cm} L{10.5cm}@{}}
+  \hline
+  Nom et pr\'{e}nom      & Soukaina Nafia \\
+  \hline
+  Poste / Fonction   & Consultante en cybers\'{e}curit\'{e} chez CY-CLIC $|$ Mentore en
+                       cybers\'{e}curit\'{e} chez Connected Canadians $|$ \'{E}tudiante en
+                       cybers\'{e}curit\'{e} \`{a} Polytechnique Montr\'{e}al \\
+  \hline
+  Entreprise         & CY-CLIC / SECOM \\
+  \hline
+  Secteur            & Cybers\'{e}curit\'{e} \\
+  \hline
+  Date de l'entretien & 08 juin 2026 \\
+  \hline
+  Lieu / Format      & Microsoft Teams \\
+  \hline
+\end{tabular}
+
+\subsection*{Questions et r\'{e}ponses}
+
+\textbf{Q1. Pr\'{e}sentation et prise de contact}
+
+Bonjour, je suis ravie de vous accueillir aujourd'hui. Je m'appelle Khadija et nous allons avoir
+un \'{e}change tr\`{e}s int\'{e}ressant autour de l'intervention de l'intelligence artificielle dans la
+d\'{e}tection du trafic malveillant. Pourriez-vous nous parler bri\`{e}vement de votre parcours et de
+votre r\^{o}le actuel dans la gestion des r\'{e}seaux ?
+
+\medskip
+\textit{R\'{e}ponse}
+
+Bonjour, merci de m'avoir invit\'{e}e. Mon nom est Soukaina Nafia. Je suis \'{e}tudiante au
+baccalaur\'{e}at en cybers\'{e}curit\'{e} \`{a} Polytechnique Montr\'{e}al. En parall\`{e}le, je travaille chez SECOM
+en tant que consultante et formatrice en pr\'{e}vention de la fraude et en cybers\'{e}curit\'{e}. Mon
+r\^{o}le touche principalement la sensibilisation, l'analyse des risques, les bonnes pratiques de
+s\'{e}curit\'{e} et l'accompagnement d'organisations souhaitant mieux prot\'{e}ger leurs donn\'{e}es. Je
+fais \'{e}galement du b\'{e}n\'{e}volat chez Connected Canadians, o\`{u} j'aide \`{a} s\'{e}curiser un petit r\'{e}seau
+informatique compos\'{e} d'une vingtaine d'ordinateurs. Dans mon programme \`{a} Polytechnique,
+nous travaillons beaucoup en laboratoire avec des machines virtuelles, notamment sous Linux.
+Nous r\'{e}alisons des exercices de reconnaissance r\'{e}seau, d'analyse de vuln\'{e}rabilit\'{e}s et de
+tests d'intrusion. Dans mon cours CR470 consacr\'{e} aux tests d'intrusion, les travaux pratiques
+demandent d'utiliser des environnements virtuels comme Linux, Windows 10 et Metasploitable
+2 pour effectuer de la reconnaissance, du balayage r\'{e}seau et de l'analyse de vuln\'{e}rabilit\'{e}s.
+
+\bigskip
+\textbf{Q2. Principaux d\'{e}fis quotidiens}
+
+Dans une petite organisation, le plus grand d\'{e}fi est souvent le manque de ressources. Il n'y a
+pas toujours une personne d\'{e}di\'{e}e \`{a} temps plein \`{a} la s\'{e}curit\'{e} informatique. Les principaux
+d\'{e}fis sont la gestion des mots de passe, les mises \`{a} jour, le contr\^{o}le des acc\`{e}s, la protection
+des postes de travail et l'encadrement des acc\`{e}s \`{a} distance par VPN. Il faut \'{e}galement veiller
+\`{a} appliquer le principe du moindre privil\`{e}ge. Dans un petit r\'{e}seau, la visibilit\'{e} est aussi un
+d\'{e}fi : on ne sait pas toujours quels appareils sont connect\'{e}s, quels services sont expos\'{e}s ou
+si certains postes pr\'{e}sentent des comportements anormaux. C'est pourquoi l'inventaire, la
+surveillance minimale et les bonnes pratiques de base sont essentiels.
+
+\bigskip
+\textbf{Q3. Comportements inhabituels observ\'{e}s}
+
+Dans un petit r\'{e}seau, une anomalie typique peut se manifester par une latence \'{e}lev\'{e}e ou une
+connexion instable pour plusieurs utilisateurs. Avant de conclure \`{a} une attaque, il faut examiner
+les causes les plus simples : surcharge de la connexion Internet, probl\`{e}me de routeur, appareil
+consommant une grande partie de la bande passante, mise \`{a} jour massive ou mauvaise
+configuration. Dans mes laboratoires, nous apprenons \`{a} analyser ce type de situation avec une
+approche structur\'{e}e : identifier les machines pr\'{e}sentes sur le r\'{e}seau, v\'{e}rifier les ports ouverts,
+comprendre les services expos\'{e}s, puis d\'{e}terminer si l'activit\'{e} observ\'{e}e est normale ou
+suspecte. Mon cours CR470 demande d'utiliser Nmap pour effectuer diff\'{e}rents types de scans
+r\'{e}seau --- TCP, UDP et analyses d'empreintes (fingerprinting) --- afin d'identifier les syst\`{e}mes
+et services pr\'{e}sents.
+
+\bigskip
+\textbf{Q4. Causes les plus fr\'{e}quentes des anomalies}
+
+Les causes les plus courantes ne sont pas toujours malveillantes : \'{e}quipement vieillissant,
+mauvaise configuration, poste non mis \`{a} jour, logiciel consommant trop de ressources ou
+probl\`{e}me avec le fournisseur Internet. Mais il faut aussi envisager des causes li\'{e}es \`{a} la
+s\'{e}curit\'{e} : appareil compromis, logiciel malveillant, compte VPN utilis\'{e} sans autorisation, scan
+interne ou poste communiquant avec des adresses IP inhabituelles. Dans un petit organisme,
+le risque vient souvent du manque de journalisation, de visibilit\'{e} et de tra\c{c}abilit\'{e}, ce qui rend
+difficile la d\'{e}tection rapide d'un comportement anormal.
+
+\bigskip
+\textbf{Q5. Diff\'{e}rencier une panne technique d'une attaque malveillante}
+
+Je commencerais par une approche globale : si tout le r\'{e}seau est lent, je v\'{e}rifierais l'\'{e}tat de
+la connexion Internet, du pare-feu et des \'{e}quipements r\'{e}seau. Si seulement un poste ou un
+groupe de postes est touch\'{e}, je me concentrerais sur les machines concern\'{e}es. Pour une
+surcharge ou une attaque par d\'{e}ni de service (DoS/DDoS), je chercherais des signes comme
+un volume anormal de connexions, un trafic entrant excessif ou des requ\^{e}tes r\'{e}p\'{e}titives vers
+les m\^{e}mes services. Pour un malware interne, je rechercherais un poste communiquant avec
+des destinations inhabituelles, g\'{e}n\'{e}rant beaucoup de trafic sortant ou tentant de contacter
+plusieurs machines internes. Dans mes laboratoires, j'utilise des outils comme Nmap, Nessus
+ou d'autres analyseurs pour identifier les services expos\'{e}s, les vuln\'{e}rabilit\'{e}s et les
+comportements suspects.
+
+\bigskip
+\textbf{Q6. D\'{e}tection des scans de ports}
+
+Un scan de ports peut se manifester par des tentatives r\'{e}p\'{e}t\'{e}es de connexion vers plusieurs
+ports ou plusieurs machines en peu de temps. Dans un r\'{e}seau bien surveill\'{e}, il peut \^{e}tre
+d\'{e}tect\'{e} \`{a} l'aide des journaux du pare-feu, d'un IDS, d'un IPS ou d'un outil de supervision
+r\'{e}seau. Dans une petite structure, ces solutions ne sont pas toujours disponibles. Il faut donc,
+au minimum, activer les journaux utiles sur les \'{e}quipements disponibles, surveiller les
+connexions VPN, conserver une trace des appareils autoris\'{e}s et limiter les services expos\'{e}s.
+Dans mon cours de cybers\'{e}curit\'{e}, cela inclut une partie consacr\'{e}e \`{a} la reconnaissance
+OSINT avec Maltego ainsi que plusieurs scans Nmap sur des machines virtuelles.
+
+\bigskip
+\textbf{Q7. Outils de surveillance et de s\'{e}curisation}
+
+Dans ce contexte, je m'appuierais sur les sources d'information disponibles : la liste des
+appareils connect\'{e}s et autoris\'{e}s, les journaux VPN, les alertes de l'antivirus, les
+\'{e}v\'{e}nements Windows et, si possible, l'observation du trafic r\'{e}seau. La premi\`{e}re \'{e}tape serait
+d'identifier l'appareil ou le compte concern\'{e}. Ensuite, je recommanderais de contenir le risque
+en isolant le poste suspect. Si le compte semble compromis, il faudrait imm\'{e}diatement changer
+le mot de passe, r\'{e}voquer les sessions actives et v\'{e}rifier les acc\`{e}s r\'{e}cents. Je
+documenterais \'{e}galement l'incident de mani\`{e}re structur\'{e}e, en gardant une approche
+pragmatique adapt\'{e}e aux ressources disponibles.
+
+\bigskip
+\textbf{Q8. Limites des outils actuels}
+
+La principale limite est le manque de temps et de ressources. Dans une petite organisation,
+les employ\'{e}s ne sont pas forc\'{e}ment form\'{e}s pour interpr\'{e}ter les journaux ou reconna\^{i}tre une
+anomalie r\'{e}seau. On ne dispose pas toujours d'un SIEM ni d'un IDS, ce qui augmente le
+risque de manquer des signaux faibles. Les faux positifs constituent \'{e}galement une limite
+importante : une activit\'{e} peut sembler suspecte alors qu'elle est caus\'{e}e par une mise \`{a} jour,
+une sauvegarde ou un service l\'{e}gitime. C'est pourquoi il est essentiel de bien documenter le
+comportement normal du r\'{e}seau.
+
+\bigskip
+\textbf{Q9. Apport du machine learning dans la d\'{e}tection des attaques}
+
+Je pense que l'IA peut \^{e}tre tr\`{e}s utile pour d\'{e}tecter des anomalies plus rapidement, surtout
+lorsqu'il y a beaucoup de donn\'{e}es \`{a} analyser. Un poste communiquant soudainement avec
+plusieurs adresses externes, un volume de trafic anormal ou des tentatives de connexion
+r\'{e}p\'{e}t\'{e}es peuvent \^{e}tre plus facilement d\'{e}tect\'{e}s. Cependant, je ne la verrais pas comme une
+solution autonome d'embl\'{e}e : l'IA devrait d'abord \^{e}tre un outil d'aide \`{a} la d\'{e}cision, capable
+de prioriser les alertes et d'expliquer pourquoi un comportement semble anormal. Il faut
+\'{e}galement \^{e}tre attentif \`{a} la confidentialit\'{e} des donn\'{e}es collect\'{e}es. L'IA peut aider, mais elle
+doit rester encadr\'{e}e et utilis\'{e}e de mani\`{e}re responsable.
+
+\bigskip
+\textbf{Q10. Blocage automatique par l'IA}
+
+Oui, mais avec beaucoup de prudence. L'IA peut \^{e}tre utile pour recommander le blocage d'une
+adresse IP ou g\'{e}n\'{e}rer une alerte prioritaire. En revanche, je serais plus r\'{e}serv\'{e}e concernant
+les d\'{e}cisions automatiques --- comme le blocage d'un routeur ou la coupure d'un acc\`{e}s VPN
+--- car une mauvaise d\'{e}cision pourrait bloquer tout un environnement ou interrompre un service.
+La meilleure approche serait progressive : d'abord une phase de d\'{e}tection et de signalement,
+puis une automatisation avec validation humaine, et enfin une autorisation uniquement pour des
+sc\'{e}narios tr\`{e}s bien d\'{e}finis et \`{a} faible risque.
+
+\bigskip
+\textbf{Q11. Fonctionnalit\'{e}s essentielles d'une solution IA}
+
+Une solution IA efficace en cybers\'{e}curit\'{e} devrait inclure : une d\'{e}tection d'anomalies en temps
+r\'{e}el, un syst\`{e}me de corr\'{e}lation des \'{e}v\'{e}nements pour relier plusieurs alertes entre elles, une
+priorisation intelligente des alertes, des explications claires des d\'{e}cisions de l'IA pour faciliter
+la prise de d\'{e}cision, et, enfin, un contr\^{o}le humain maintenu dans la boucle pour les actions
+sensibles.
+
+\clearpage
+
+% ============================================================
+%  ENTRETIEN 3 — OUSSAMA
+% ============================================================
+\section{Entretien 3 --- Oussama}
+
+\subsection*{Informations sur l'interlocuteur}
+
+\begin{tabular}{@{}B{4cm} L{10.5cm}@{}}
+  \hline
+  Nom et pr\'{e}nom      & Oussama \\
+  \hline
+  Poste / Fonction   & \'{E}tudiant en 2$^{e}$ ann\'{e}e --- G\'{e}nie informatique --- ENSA K\'{e}nitra \\
+  \hline
+  Entreprise         & --- \\
+  \hline
+  Secteur            & Cybers\'{e}curit\'{e} (contexte acad\'{e}mique) \\
+  \hline
+  Date de l'entretien & 28 avril 2026 \\
+  \hline
+  Lieu / Format      & Microsoft Teams \\
+  \hline
+\end{tabular}
+
+\subsection*{Questions et r\'{e}ponses}
+
+\textbf{Q1. Pr\'{e}sentation et architecture r\'{e}seau utilis\'{e}e}
+
+Je m'appelle Oussama. Je suis \'{e}tudiant en deuxi\`{e}me ann\'{e}e en g\'{e}nie informatique. Au
+quotidien, j'utilise principalement le r\'{e}seau Wi-Fi de l'\'{e}cole pour acc\'{e}der aux plateformes
+p\'{e}dagogiques, effectuer des recherches, travailler sur GitHub et communiquer avec mon groupe
+de projet. En dehors des cours, j'utilise aussi parfois un petit environnement local avec Linux,
+Docker ou des machines virtuelles pour tester des applications web ou des scripts r\'{e}seau.
+
+\bigskip
+\textbf{Q2. Principaux d\'{e}fis li\'{e}s \`{a} l'infrastructure r\'{e}seau}
+
+Le probl\`{e}me principal est la disponibilit\'{e} et la stabilit\'{e} du r\'{e}seau. Aux heures de pointe,
+lorsque de nombreux \'{e}tudiants sont connect\'{e}s, la connexion devient tr\`{e}s lente. Parfois, le
+signal Wi-Fi est bon mais les pages ne chargent pas, ou les plateformes p\'{e}dagogiques
+r\'{e}pondent tr\`{e}s lentement. On observe \'{e}galement des coupures temporaires, des pertes de
+paquets ou une latence \'{e}lev\'{e}e.
+
+\bigskip
+\textbf{Q3. Exp\'{e}rience r\'{e}cente d'anomalie r\'{e}seau}
+
+R\'{e}cemment, pendant un travail de groupe, nous devions envoyer un fichier et acc\'{e}der \`{a} une
+plateforme en ligne, mais la connexion \'{e}tait tr\`{e}s lente. Le Wi-Fi \'{e}tait connect\'{e}, mais les
+requ\^{e}tes mettaient beaucoup de temps \`{a} r\'{e}pondre, provoquant des erreurs de type time-out.
+Le probl\`{e}me semblait g\'{e}n\'{e}ral, touchant plusieurs services en m\^{e}me temps, comme si une
+saturation ou une anomalie affectait le trafic r\'{e}seau.
+
+\bigskip
+\textbf{Q4. Causes probables des perturbations furtives}
+
+Plusieurs causes sont possibles : la surcharge du r\'{e}seau due \`{a} un grand nombre d'utilisateurs
+connect\'{e}s, mais aussi des machines g\'{e}n\'{e}rant un trafic excessif \`{a} cause de t\'{e}l\'{e}chargements
+lourds, de mises \`{a} jour automatiques ou d'un malware. Dans un contexte de s\'{e}curit\'{e}, une
+machine compromise pourrait lancer des scans de ports, envoyer de nombreuses requ\^{e}tes ou
+tenter de d\'{e}couvrir les services ouverts sur le r\'{e}seau. Ce type d'activit\'{e} peut \^{e}tre discret au
+d\'{e}but, mais il peut n\'{e}anmoins d\'{e}grader les performances.
+
+\bigskip
+\textbf{Q5. Diff\'{e}rencier une panne d'une attaque}
+
+\`{A} mon niveau, je ne peux pas le confirmer avec certitude, car je n'ai pas acc\`{e}s aux journaux
+des routeurs ou des pare-feux. Je peux n\'{e}anmoins effectuer quelques v\'{e}rifications simples :
+v\'{e}rifier si le probl\`{e}me concerne uniquement mon poste ou plusieurs \'{e}tudiants, faire un ping
+vers la passerelle ou vers un site externe pour mesurer la latence et les pertes de paquets. Si
+mon ordinateur est le seul affect\'{e}, je v\'{e}rifie les processus consommant de la bande passante
+ou je lance une analyse antivirus.
+
+\bigskip
+\textbf{Q6. Outils et proc\'{e}dures utilis\'{e}s}
+
+Je commence par des tests simples : v\'{e}rifier la connexion, faire un ping, tester un autre
+navigateur ou un autre appareil, puis v\'{e}rifier si une application consomme beaucoup de bande
+passante. Dans mes projets personnels, je peux utiliser des outils comme Wireshark ou netstat
+pour observer les connexions actives. Sur le r\'{e}seau de l'\'{e}cole, je n'ai pas les droits n\'{e}cessaires
+pour analyser toute l'infrastructure. Pour bloquer une menace, je peux seulement s\'{e}curiser
+ma propre machine, fermer des applications suspectes, lancer un antivirus ou signaler le
+probl\`{e}me au service informatique.
+
+\bigskip
+\textbf{Q7. Int\'{e}gration de l'IA pour d\'{e}tecter les attaques en temps r\'{e}el}
+
+Je pense que c'est pertinent, car un mod\`{e}le d'IA pourrait analyser des volumes de donn\'{e}es
+bien plus importants qu'un humain. Il pourrait d\'{e}tecter des patterns anormaux comme un
+nombre inhabituel de connexions, des scans de ports, des tentatives r\'{e}p\'{e}t\'{e}es vers plusieurs
+services ou une hausse brutale du trafic. L'avantage est sa r\'{e}activit\'{e}, surtout si le mod\`{e}le est
+entra\^{i}n\'{e} sur des comportements normaux et malveillants. Il faut cependant veiller \`{a} limiter les
+faux positifs.
+
+\bigskip
+\textbf{Q8. Conditions d'adoption d'une solution IA}
+
+Oui, je serais pr\^{e}t \`{a} l'utiliser si elle am\'{e}liore la stabilit\'{e} du r\'{e}seau et permet une d\'{e}tection
+rapide des anomalies. Les fonctionnalit\'{e}s importantes seraient une analyse en temps r\'{e}el,
+des alertes claires et un tableau de bord simple. Mes principales craintes concernent la
+confidentialit\'{e} des donn\'{e}es, le risque de faux positifs et le fait que l'IA puisse prendre des
+d\'{e}cisions automatiques sans contr\^{o}le humain.
+
+\clearpage
+
+% ============================================================
+%  ENTRETIEN 4 — OUZIZI AMINE
+% ============================================================
+\section{Entretien 4 --- Ouzizi Amine}
+
+\subsection*{Informations sur l'interlocuteur}
+
+\begin{tabular}{@{}B{4cm} L{10.5cm}@{}}
+  \hline
+  Nom et pr\'{e}nom      & Ouzizi Amine \\
+  \hline
+  Poste / Fonction   & \'{E}tudiant en 2$^{e}$ ann\'{e}e du cycle ing\'{e}nieur --- R\'{e}seaux et Syst\`{e}mes
+                       de T\'{e}l\'{e}communication, option S\'{e}curit\'{e} des R\'{e}seaux et des
+                       Syst\`{e}mes d'Information \\
+  \hline
+  Entreprise         & --- \\
+  \hline
+  Secteur            & Cybers\'{e}curit\'{e} (contexte acad\'{e}mique) \\
+  \hline
+  Date de l'entretien & 28 avril 2026 \\
+  \hline
+  Lieu / Format      & Microsoft Teams \\
+  \hline
+\end{tabular}
+
+\subsection*{Questions et r\'{e}ponses}
+
+\textbf{Q1. Pr\'{e}sentation et architecture r\'{e}seau utilis\'{e}e}
+
+Je m'appelle Ouzizi Amine, \'{e}tudiant en deuxi\`{e}me ann\'{e}e du cycle ing\'{e}nieur en r\'{e}seaux et
+syst\`{e}mes de t\'{e}l\'{e}communication, option s\'{e}curit\'{e} des r\'{e}seaux et des syst\`{e}mes d'information.
+J'utilise le r\'{e}seau Wi-Fi de l'\'{e}cole tous les jours et je fais souvent tourner des environnements
+de test locaux sur mon poste Windows/Ubuntu pour avancer sur mes projets acad\'{e}miques et
+professionnels.
+
+\bigskip
+\textbf{Q2. Principaux d\'{e}fis li\'{e}s \`{a} l'infrastructure r\'{e}seau}
+
+Le principal d\'{e}fi est l'instabilit\'{e} de la connexion qui l\^{a}che souvent en pleine session de travail
+sans explication, ou des ports locaux qui deviennent soudainement inaccessibles depuis les
+autres machines de mon groupe de travaux pratiques.
+
+\bigskip
+\textbf{Q3. Exp\'{e}rience r\'{e}cente d'anomalie r\'{e}seau}
+
+La semaine derni\`{e}re, mon serveur web local plantait en boucle. En consultant les journaux de
+mon syst\`{e}me, j'ai constat\'{e} des centaines de requ\^{e}tes incompl\`{e}tes sur diff\'{e}rents ports,
+provenant d'adresses IP appartenant au r\'{e}seau \'{e}tudiant.
+
+\bigskip
+\textbf{Q4. Causes probables des perturbations furtives}
+
+Souvent, ce sont des scripts automatis\'{e}s ou des malwares install\'{e}s \`{a} l'insu d'un autre \'{e}tudiant
+sur son PC, qui tentent de trouver d'autres machines vuln\'{e}rables sur le r\'{e}seau local.
+
+\bigskip
+\textbf{Q5. Diff\'{e}rencier une panne d'une attaque}
+
+Je consulte les outils de surveillance de mon poste. Si l'utilisation du CPU est normale mais
+que mes ports de communication tombent les uns apr\`{e}s les autres, je sais que la perturbation
+provient de l'ext\'{e}rieur.
+
+\bigskip
+\textbf{Q6. D\'{e}tection des tentatives de reconnaissance}
+
+Sur mon syst\`{e}me, je peux les d\'{e}tecter en consultant les journaux de mon pare-feu local.
+Cependant, cette v\'{e}rification manuelle est difficile \`{a} maintenir en continu.
+
+\bigskip
+\textbf{Q6b. Outils et proc\'{e}dures utilis\'{e}s}
+
+Je consulte les connexions actives dans mon terminal et j'ajoute manuellement l'adresse IP
+suspecte dans les r\`{e}gles de rejet de mon pare-feu.
+
+\bigskip
+\textbf{Q7. Int\'{e}gration de l'IA pour d\'{e}tecter les attaques en temps r\'{e}el}
+
+Ce serait tr\`{e}s utile. L'IA pourrait comprendre mon comportement habituel en tant que
+d\'{e}veloppeur sur le r\'{e}seau et bloquer uniquement ce qui constitue r\'{e}ellement un trafic de
+reconnaissance malveillant.
+
+\bigskip
+\textbf{Q8. Pertinence de l'IA pour intervenir sur l'infrastructure}
+
+Oui, surtout pour la modification dynamique. Si l'IA change le port de mon serveur de test d\`{e}s
+qu'il est cibl\'{e} par un scan, cela me prot\`{e}ge sans interrompre la connexion avec mes coll\`{e}gues
+de travaux pratiques.
+
+\bigskip
+\textbf{Q9. Limites des m\'{e}thodes actuelles}
+
+Cela exige une surveillance constante du trafic. Il m'est impossible d'avancer sur mon code et
+de surveiller le r\'{e}seau simultan\'{e}ment --- c'est une perte de temps significative.
+
+\bigskip
+\textbf{Q10. Caract\'{e}ristiques souhait\'{e}es d'une solution IA}
+
+J'aimerais un tableau de bord web tr\`{e}s l\'{e}ger indiquant simplement quels ports sont
+actuellement cibl\'{e}s par des requ\^{e}tes externes et le niveau de menace global.
+
+\bigskip
+\textbf{Q11. Craintes avant d'autoriser une IA \`{a} interagir avec le r\'{e}seau}
+
+Ma principale crainte est que ce mod\`{e}le ralentisse les performances de ma propre machine
+s'il consomme trop de ressources processeur pour analyser les flux en continu.
+
+\bigskip
+\textbf{Q12. Bilan et disposition \`{a} adopter la solution}
+
+Si ce syst\`{e}me intelligent et autonome, garantissant un faible taux d'erreur, \'{e}tait d\'{e}ploy\'{e}, je
+l'adopterais sans h\'{e}sitation. Cela s\'{e}curiserait mes projets locaux sans effort suppl\'{e}mentaire
+de ma part.
+
+\clearpage
+
+% ============================================================
+%  ENTRETIEN 5 — FAHD
+% ============================================================
+\section{Entretien 5 --- Fahd}
+
+\subsection*{Informations sur l'interlocuteur}
+
+\begin{tabular}{@{}B{4cm} L{10.5cm}@{}}
+  \hline
+  Nom et pr\'{e}nom      & Fahd \\
+  \hline
+  Poste / Fonction   & \'{E}tudiant en 1$^{re}$ ann\'{e}e du cycle ing\'{e}nieur en informatique \\
+  \hline
+  Entreprise         & --- \\
+  \hline
+  Secteur            & Cybers\'{e}curit\'{e} (contexte acad\'{e}mique) \\
+  \hline
+  Date de l'entretien & 28 avril 2026 \\
+  \hline
+  Lieu / Format      & Microsoft Teams \\
+  \hline
+\end{tabular}
+
+\subsection*{Questions et r\'{e}ponses}
+
+\textbf{Q1. Pr\'{e}sentation et architecture r\'{e}seau utilis\'{e}e}
+
+Je m'appelle Fahd. Je suis \'{e}tudiant en premi\`{e}re ann\'{e}e du cycle ing\'{e}nieur en informatique. Je
+me connecte au r\'{e}seau de l'\'{e}cole avec mon PC personnel pour suivre les cours et r\'{e}aliser des
+travaux pratiques qui n\'{e}cessitent souvent des communications multi-ports avec des machines
+virtuelles.
+
+\bigskip
+\textbf{Q2. Principaux d\'{e}fis li\'{e}s \`{a} l'infrastructure r\'{e}seau}
+
+Les d\'{e}connexions intempestives constituent le principal d\'{e}fi. Parfois, le r\'{e}seau me
+d\'{e}connecte simplement parce que je lance un outil de diagnostic n\'{e}cessaire \`{a} un projet. Le
+filtrage est tr\`{e}s restrictif.
+
+\bigskip
+\textbf{Q3. Exp\'{e}rience r\'{e}cente d'anomalie r\'{e}seau}
+
+R\'{e}cemment, je lan\c{c}ais un script de test r\'{e}seau totalement inoffensif vers une machine virtuelle
+et, soudainement, il m'\'{e}tait impossible de charger la moindre page web. Mon adresse IP avait
+\'{e}t\'{e} mise sur liste noire par la passerelle de l'\'{e}cole.
+
+\bigskip
+\textbf{Q4. Causes probables des perturbations furtives}
+
+Je pense que des r\`{e}gles de s\'{e}curit\'{e} trop rigides s'activent pour un rien. D\`{e}s que le trafic sort
+du cadre web standard, le syst\`{e}me de d\'{e}tection r\'{e}agit de mani\`{e}re disproportionn\'{e}e.
+
+\bigskip
+\textbf{Q5. Diff\'{e}rencier une panne d'une attaque}
+
+C'est difficile \`{a} d\'{e}terminer. En g\'{e}n\'{e}ral, je fais un ping vers la passerelle : si elle r\'{e}pond mais
+que tout le reste est bloqu\'{e}, je comprends que j'ai \'{e}t\'{e} filtr\'{e} arbitrairement par le syst\`{e}me de
+d\'{e}tection d'intrusion.
+
+\bigskip
+\textbf{Q6. D\'{e}tection des tentatives de reconnaissance}
+
+En tant qu'utilisateur, je ne les d\'{e}tecte pas du tout. Je subis uniquement les cons\'{e}quences
+lorsque l'administrateur r\'{e}seau d\'{e}cide de bloquer des segments entiers par pr\'{e}caution apr\`{e}s
+avoir d\'{e}tect\'{e} un scan.
+
+\bigskip
+\textbf{Q6b. Outils et proc\'{e}dures utilis\'{e}s}
+
+Je n'ai pas les droits d'administration sur le mat\'{e}riel de l'\'{e}cole, donc je ne peux rien faire \`{a}
+part red\'{e}marrer ma machine ou changer de connexion en esp\'{e}rant que le blocage soit lev\'{e}.
+
+\bigskip
+\textbf{Q7. Int\'{e}gration de l'IA pour d\'{e}tecter les attaques en temps r\'{e}el}
+
+Si l'IA est correctement entra\^{i}n\'{e}e et qu'elle r\'{e}duit drastiquement les faux positifs en
+distinguant un vrai scan d'un travail pratique \'{e}tudiant, je suis totalement pour.
+
+\bigskip
+\textbf{Q8. Pertinence de l'IA pour intervenir sur l'infrastructure}
+
+Bloquer une IP automatiquement : oui, \`{a} condition qu'on puisse facilement contester le blocage
+en cas d'erreur. L'id\'{e}e de modifier les acc\`{e}s dynamiquement me semble tr\`{e}s pertinente pour
+esquiver un attaquant sans tout couper.
+
+\bigskip
+\textbf{Q9. Limites des m\'{e}thodes actuelles}
+
+Les faux positifs, principalement. Les r\`{e}gles actuelles ne tiennent absolument pas compte du
+contexte acad\'{e}mique de mes requ\^{e}tes et me bloquent sans raison valable, ce qui est
+particuli\`{e}rement probl\'{e}matique lors des rendus de projets.
+
+\bigskip
+\textbf{Q10. Caract\'{e}ristiques souhait\'{e}es d'une solution IA}
+
+Il faut avant tout de la transparence. Si mon flux est bloqu\'{e}, je veux une notification claire
+expliquant exactement quelle caract\'{e}ristique de mon trafic a conduit l'IA \`{a} prendre cette
+d\'{e}cision.
+
+\bigskip
+\textbf{Q11. Craintes avant d'autoriser une IA \`{a} interagir avec le r\'{e}seau}
+
+Le taux de faux positifs doit \^{e}tre tr\`{e}s faible. Je ne veux plus \^{e}tre emp\^{e}ch\'{e} de rendre un
+projet \`{a} cause d'une r\`{e}gle de s\'{e}curit\'{e} mal calibr\'{e}e.
+
+\bigskip
+\textbf{Q12. Bilan et disposition \`{a} adopter la solution}
+
+Si cela met fin aux blocages injustifi\'{e}s que nous subissons actuellement, je serais le premier
+\`{a} plaider pour son installation.
+
+\clearpage
+
+% ============================================================
+%  ANNEXE — GUIDE D'ENTRETIEN
+% ============================================================
+\section*{Annexe --- Guide d'entretien}
+\addcontentsline{toc}{section}{Annexe --- Guide d'entretien}
+
+\begin{center}
+  \textit{IA \& Automatisation de la d\'{e}tection d'intrusions --- Analyse des vuln\'{e}rabilit\'{e}s r\'{e}seau}
+\end{center}
+
+\begin{tabular}{@{}B{4cm} L{10.5cm}@{}}
+  \hline
+  Module         & Intelligence Artificielle \\
+  \hline
+  Statut         & Projet acad\'{e}mique \\
+  \hline
+  \'{E}tudiant 1 & El Kartouti Anas \\
+  \hline
+  \'{E}tudiant 2 & Lekhbioui Adil \\
+  \hline
+  \'{E}tudiant 3 & Moulay Anas \\
+  \hline
+  \'{E}tudiant 4 & Hammoubel El Yazid \\
+  \hline
+  \'{E}tudiant 5 & Nafia Khadija \\
+  \hline
+\end{tabular}
+
+\bigskip
+\subsection*{1. Phase d'introduction (mise en situation)}
+
+\textbf{Q1.1 :} \og{} Pourriez-vous vous pr\'{e}senter bri\`{e}vement et d\'{e}crire votre r\^{o}le ainsi que le
+type d'architecture r\'{e}seau (LAN, Cloud, r\'{e}seaux hybrides) que vous g\'{e}rez ou utilisez au
+quotidien~? \fg{}
+
+\bigskip
+
+\textbf{Q1.2 :} \og{} De mani\`{e}re g\'{e}n\'{e}rale, quels sont les d\'{e}fis ou les incidents majeurs auxquels
+vous \^{e}tes le plus fr\'{e}quemment confront\'{e} pour garantir la disponibilit\'{e} et la s\'{e}curit\'{e} de cette
+infrastructure~? \fg{}
+
+\subsection*{2. Phase de d\'{e}veloppement (exploration du probl\`{e}me cible)}
+
+\textbf{Q2.1 :} \og{} Pourriez-vous me d\'{e}crire en d\'{e}tail une exp\'{e}rience r\'{e}cente o\`{u} vous avez
+constat\'{e} un comportement suspect, une anomalie de trafic ou une baisse de performance
+inexpliquée sur le r\'{e}seau~? \fg{}
+
+\bigskip
+
+\textbf{Q2.2 :} \og{} Selon votre exp\'{e}rience, lorsque le r\'{e}seau subit ce type de perturbations de
+mani\`{e}re furtive, quelles en sont les causes les plus courantes~? \fg{}
+
+\bigskip
+
+\textbf{Q2.3 :} \og{} Face \`{a} ces anomalies, comment faites-vous la diff\'{e}rence entre une simple panne
+de composant, une inondation de trafic malveillante (DDoS/surcharge) ou une infection par
+un malware interne~? \fg{}
+
+\bigskip
+
+\textbf{Q2.4 :} \og{} Les attaquants proc\`{e}dent souvent par des phases de reconnaissance avant de
+frapper. Comment percevez-vous ou d\'{e}tectez-vous ces tentatives de cartographie silencieuse
+(comme l'exploration de vos services ou les scans de ports) sur votre p\'{e}rim\`{e}tre~? \fg{}
+
+\subsection*{3. Phase d'approfondissement (limites actuelles et transition vers l'innovation)}
+
+\textbf{Q3.1 :} \og{} Actuellement, quelles proc\'{e}dures, journaux ou outils mobilisez-vous pour
+isoler la cause d'une intrusion ou d'un scan, et comment proc\'{e}dez-vous pour bloquer la
+menace~? \fg{}
+
+\bigskip
+
+\textbf{Q3.2 :} \og{} Quelles sont les limites techniques ou humaines que vous rencontrez avec ces
+m\'{e}thodes actuelles (temps de r\'{e}action, faux positifs, charge de travail)~? \fg{}
+
+\bigskip
+
+\textbf{Q3.3 :} \og{} Face \`{a} la complexit\'{e} des attaques, que penseriez-vous de l'int\'{e}gration d'un
+mod\`{e}le d'intelligence artificielle capable d'analyser le trafic en temps r\'{e}el pour d\'{e}tecter de
+mani\`{e}re autonome ces comportements suspects~? \fg{}
+
+\bigskip
+
+\textbf{Q3.4 :} \og{} Pensez-vous qu'un mod\`{e}le IA serait pertinent non seulement pour d\'{e}tecter,
+mais aussi pour intervenir directement sur l'infrastructure (ex.~: bloquer une IP, modifier
+dynamiquement l'acc\`{e}s) afin de vous faire gagner du temps~? \fg{}
+
+\subsection*{4. Phase de conclusion (crit\`{e}res d'acceptabilit\'{e} de la solution)}
+
+\textbf{Q4.1 :} \og{} Pour qu'une solution bas\'{e}e sur l'IA vous soit r\'{e}ellement utile, quelles
+devraient \^{e}tre ses caract\'{e}ristiques principales (ex.~: type de tableau de bord, alertes en
+temps r\'{e}el, visibilit\'{e} du r\'{e}seau)~? \fg{}
+
+\bigskip
+
+\textbf{Q4.2 :} \og{} Quelles seraient vos exigences strictes ou vos craintes (ex.~: confidentialit\'{e}
+des flux, blocage accidentel d'un trafic l\'{e}gitime) avant d'autoriser une IA \`{a} interagir avec vos
+routeurs/pare-feux~? \fg{}
+
+\bigskip
+
+\textbf{Q4.3 :} \og{} En r\'{e}sum\'{e}, si ce syst\`{e}me intelligent et autonome, garantissant un faible taux
+d'erreur, \'{e}tait d\'{e}ploy\'{e} sur votre infrastructure, seriez-vous pr\^{e}t \`{a} l'adopter dans vos
+op\'{e}rations quotidiennes~? \fg{}
+
+\clearpage
+
+% ============================================================
+%  CONCLUSION
+% ============================================================
+\section*{Conclusion}
+\addcontentsline{toc}{section}{Conclusion}
+
+Ces entretiens nous ont permis de d\'{e}passer le cadre purement acad\'{e}mique et d'appr\'{e}hender
+la d\'{e}tection des attaques r\'{e}seau sous un angle professionnel concret. Les \'{e}changes avec les
+experts ont confirm\'{e} la pertinence de notre approche bas\'{e}e sur le machine learning, tout en
+nous sensibilisant aux d\'{e}fis r\'{e}els li\'{e}s \`{a} la qualit\'{e} des donn\'{e}es, aux faux positifs et \`{a}
+l'\'{e}volution constante des techniques d'attaque.
+
+En tant qu'\'{e}tudiants en troisi\`{e}me ann\'{e}e du cycle ing\'{e}nieur, sp\'{e}cialit\'{e} R\'{e}seaux et Syst\`{e}mes
+de T\'{e}l\'{e}communications \`{a} l'ENSA K\'{e}nitra, ces rencontres ont \'{e}t\'{e} particuli\`{e}rement
+enrichissantes. Elles nous ont donn\'{e} une vision plus claire des comp\'{e}tences attendues dans
+le domaine et nous ont motiv\'{e}s \`{a} approfondir notre ma\^{i}trise des outils de cybers\'{e}curit\'{e} et
+d'analyse de trafic r\'{e}seau.
+
+Nous tenons \`{a} remercier chaleureusement tous les professionnels qui ont accept\'{e} de nous
+consacrer de leur temps et de partager leur expertise avec nous.
+
+\vspace{2em}
+\noindent\rule{\linewidth}{0.4pt}
+\begin{center}
+  \small Compte rendu des entretiens ---
+  Module Intelligence Artificielle ---
+  ENSA K\'{e}nitra --- 2025 / 2026
+\end{center}
+
+\end{document}

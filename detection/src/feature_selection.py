@@ -11,8 +11,6 @@ except FileNotFoundError:
     df.columns = [col.strip() for col in df.columns]
 
 X = df[FEATURES].copy()
-X['shadow_node_interaction'] = 0
-X['mtd_port_delta'] = 0
 
 X = X.replace([np.inf, -np.inf], np.nan)
 X = X.fillna(X.median())
@@ -20,12 +18,17 @@ X = X.fillna(X.median())
 corr = X.corr(numeric_only=True)
 print(corr)
 
-plt.figure(figsize=(10, 8))
+plt.figure(figsize=(12, 10))
 sns.heatmap(
     corr,
     annot=True,
     cmap="coolwarm",
-    fmt=".2f"
+    fmt=".2f",
+    vmin=-1,
+    vmax=1,
+    center=0,
+    square=True,
+    linewidths=0.5
 )
 
 plt.title("Feature Correlation Heatmap")

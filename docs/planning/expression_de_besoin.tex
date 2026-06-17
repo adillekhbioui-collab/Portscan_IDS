@@ -1,11 +1,10 @@
 % ============================================================
-%  Needs Expression / Problem Statement
-%  Project: AI-Based IDS/IPS — Port Scan Detection
-%  Module: Artificial Intelligence — Semester 2
+%  Expression de Besoin / Problem Statement
+%  Project: AEGIS Entropy — AI-Based Port Scan Detection
+%  Updated: June 2026 (aligned with final report)
 % ============================================================
 \documentclass[12pt,a4paper]{article}
 
-% --- Packages ---
 \usepackage[utf8]{inputenc}
 \usepackage[T1]{fontenc}
 \usepackage[english]{babel}
@@ -13,6 +12,7 @@
 \usepackage{enumitem}
 \usepackage{booktabs}
 \usepackage{array}
+\usepackage{tabularx}
 \usepackage{xcolor}
 \usepackage{titlesec}
 \usepackage{fancyhdr}
@@ -24,247 +24,205 @@
 \definecolor{sectionblue}{RGB}{15, 23, 42}
 \definecolor{accentcyan}{RGB}{6, 182, 212}
 
-% --- Section styling ---
 \titleformat{\section}
   {\large\bfseries\color{sectionblue}}
   {\thesection.}{0.5em}{}[\vspace{-0.5em}\textcolor{accentcyan}{\rule{\textwidth}{0.4pt}}]
-
 \titleformat{\subsection}
   {\normalsize\bfseries\color{sectionblue}}
   {\thesubsection.}{0.5em}{}
 
-% --- Header/Footer ---
 \pagestyle{fancy}
 \fancyhf{}
-\fancyhead[L]{\small\textcolor{gray}{Needs Expression --- IDS/IPS Port Scan}}
-\fancyhead[R]{\small\textcolor{gray}{AI Module --- S2}}
+\fancyhead[L]{\small\textcolor{gray}{Expression de Besoin — AEGIS Entropy}}
+\fancyhead[R]{\small\textcolor{gray}{AI Module — S2}}
 \fancyfoot[C]{\small\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
 
-% --- Table column types ---
 \newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
 \newcolumntype{C}[1]{>{\centering\arraybackslash}p{#1}}
 
 \begin{document}
 
-% ============================================================
-%  TITLE BLOCK
-% ============================================================
 \begin{center}
-  {\Large\bfseries Needs Expression / Problem Statement}\\[0.6em]
-  {\large AI-Based Intrusion Detection System}\\[0.3em]
-  {\large Detection of \textit{Port Scan \& Network Reconnaissance} Attacks}\\[1.2em]
+  {\Large\bfseries Expression de Besoin / Probl\'{e}matique}\\[0.6em]
+  {\large AEGIS Entropy}\\[0.3em]
+  {\large D\'{e}tection de Port Scan et Reconnaissance R\'{e}seau\\[0.2em]
+   par Apprentissage Automatique}\\[1.2em]
   \begin{tabular}{rl}
-    \textbf{Module:}  & Artificial Intelligence --- Semester 2 \\
-    \textbf{Team:}    & 5 members (Engineering --- ENSA) \\
-    \textbf{Date:}    & April 2026 \\
+    \textbf{Module :}  & Intelligence Artificielle --- Semestre 2 \\
+    \textbf{\'{E}quipe :} & 5 membres (Ing\'{e}nierie --- ENSA K\'{e}nitra) \\
+    \textbf{Encadrant :}  & Pr.\ Aniss Moumen \\
+    \textbf{Date :}    & Juin 2026 \\
   \end{tabular}
 \end{center}
 
 \vspace{1em}
 
 % ============================================================
-%  PARAGRAPH 1 --- Context / Current Situation
-% ============================================================
-\section{Context and Current Situation}
+\section{Contexte et situation actuelle}
 
-In the field of network security, the early detection of reconnaissance
-activities represents a critical challenge. \textit{Port Scanning} --- the
-technique by which an attacker systematically probes the ports of a network to
-identify active hosts, exposed services, and exploitable vulnerabilities ---
-constitutes the first phase of virtually all cyberattacks documented under the
-\textit{Cyber Kill Chain} framework.
+Dans le domaine de la s\'{e}curit\'{e} des r\'{e}seaux, la d\'{e}tection pr\'{e}coce des activit\'{e}s
+de reconnaissance constitue un enjeu critique. Le \textit{Port Scanning} --- technique par
+laquelle un attaquant sonde syst\'{e}matiquement les ports d'un r\'{e}seau pour identifier les
+h\^{o}tes actifs, les services expos\'{e}s et les vuln\'{e}rabilit\'{e}s exploitables ---
+repr\'{e}sente la premi\`{e}re phase de la quasi-totalit\'{e} des cyberattaques document\'{e}es
+sous le mod\`{e}le \textit{Cyber Kill Chain}.
 
-Currently, network infrastructures rely primarily on static rule-based firewalls
-and signature-based Intrusion Detection Systems (IDS) such as Snort and
-Suricata. These tools operate through known pattern matching and apply fixed
-thresholds (e.g., ``more than 100 SYN connections within 10 seconds'').
+Actuellement, les infrastructures r\'{e}seau s'appuient principalement sur des pare-feux \`{a}
+r\`{e}gles statiques et des syst\`{e}mes de d\'{e}tection d'intrusion (IDS) bas\'{e}s sur des
+signatures, tels que Snort et Suricata.
+Ces outils fonctionnent par reconnaissance de motifs connus et appliquent des seuils fixes.
 
-This approach gives rise to several major shortcomings:
+Cette approche engendre plusieurs lacunes majeures :
 
 \begin{itemize}[nosep,leftmargin=1.5em]
-  \item \textbf{Blindness to slow and stealthy scans:} attackers deliberately
-        space their probes (1 packet/second or less) to remain below detection
-        thresholds, rendering static rules ineffective.
-  \item \textbf{High false positive rate:} legitimate traffic (software updates,
-        service discovery, monitoring scans) frequently triggers the same
-        signatures as malicious scans, generating a volume of irrelevant alerts
-        that exhausts network administrators.
-  \item \textbf{Lack of behavioral profiling:} current systems treat each packet
-        in isolation, without analyzing the temporal and statistical patterns of
-        traffic per source IP over sliding time windows.
-  \item \textbf{Inability to classify scan type:} traditional IDS cannot
-        distinguish a \textit{SYN Stealth Scan} from a \textit{UDP Scan}, an
-        \textit{ACK Scan}, or an \textit{XMAS Scan}, depriving the administrator
-        of essential tactical information.
+  \item \textbf{C\'{e}cit\'{e} face aux scans furtifs et lents :}
+        les attaquants espacent volontairement leurs sondes pour rester sous les seuils
+        de d\'{e}tection, rendant les r\`{e}gles statiques inefficaces.
+  \item \textbf{Taux de faux positifs \'{e}lev\'{e} :}
+        le trafic l\'{e}gitime --- mises \`{a} jour logicielles, d\'{e}couverte de services,
+        outils de supervision --- d\'{e}clenche fr\'{e}quemment les m\^{e}mes signatures
+        que les scans malveillants.
+  \item \textbf{Absence de profilage comportemental :}
+        les syst\`{e}mes actuels traitent chaque paquet isol\'{e}ment, sans analyser
+        les motifs temporels et statistiques du trafic par adresse source sur des
+        fen\^{e}tres temporelles glissantes.
+  \item \textbf{Incapacit\'{e} \`{a} classifier le type de scan :}
+        un IDS classique ne distingue pas un \textit{SYN Stealth Scan} d'un
+        \textit{UDP Scan}, privant l'analyste d'information tactique essentielle.
 \end{itemize}
 
-These limitations directly impact Security Operations Center (SOC) teams in
-terms of response time, alert reliability, and the ability to contain an attack
-before it progresses to more destructive phases (exploitation, lateral movement,
-exfiltration).
+Ces limitations impactent directement les \'{e}quipes SOC en termes de temps de r\'{e}action,
+de fiabilit\'{e} des alertes et de capacit\'{e} \`{a} contenir une attaque avant qu'elle
+ne progresse vers des phases plus destructrices.
 
 % ============================================================
-%  PARAGRAPH 2 --- Problem Statement / Needs Expression
-% ============================================================
-\section{Problem Statement and Needs Expression}
+\section{Probl\'{e}matique}
 
-Given these observations, it becomes necessary to rethink the detection
-mechanism in order to \textbf{overcome the limitations of static signature-based
-approaches} and equip the network with an intelligent, adaptive, real-time
-analytical capability.
+Face \`{a} ces constats, il devient n\'{e}cessaire de repenser le m\'{e}canisme de d\'{e}tection
+afin de \textbf{d\'{e}passer les limites des approches statiques} et doter le r\'{e}seau
+d'une capacit\'{e} d'analyse intelligente, adaptative et temps-r\'{e}el.
 
-The primary objective is to design a system capable of automatically learning the
-behavioral patterns of network traffic --- both normal and malicious --- in order
-to autonomously detect reconnaissance activities, including slow and stealthy
-variants.
+L'objectif principal est de concevoir un syst\`{e}me capable d'apprendre automatiquement
+les motifs comportementaux du trafic r\'{e}seau --- normal comme malveillant --- afin de
+d\'{e}tecter de mani\`{e}re autonome les activit\'{e}s de reconnaissance, y compris
+les variantes furtives.
 
-In this context, several questions arise:
+Dans ce contexte, plusieurs questions se posent :
 
 \begin{enumerate}[nosep,leftmargin=1.5em]
-  \item Which network traffic \textit{features} effectively discriminate a port
-        scan from legitimate behavior?
-  \item How can a machine learning model detect scans distributed over time,
-        where static thresholds fail?
-  \item What labeled and representative data must be provided to the model to
-        ensure reliable classification with a minimal false positive rate?
+  \item Quelles caract\'{e}ristiques (\textit{features}) du trafic r\'{e}seau discriminent
+        efficacement un port scan d'un comportement l\'{e}gitime ?
+  \item Comment un mod\`{e}le d'apprentissage automatique peut-il d\'{e}tecter des
+        scans distribu\'{e}s dans le temps, l\`{a} o\`{u} les seuils statiques \'{e}chouent ?
+  \item Quelles donn\'{e}es \'{e}tiquet\'{e}es et repr\'{e}sentatives faut-il fournir
+        au mod\`{e}le pour garantir une classification fiable avec un taux minimal
+        de faux positifs ?
 \end{enumerate}
 
 \vspace{0.5em}
-\noindent The problem statement can thus be formulated as follows:
+\noindent La probl\'{e}matique se formule ainsi :
 
 \begin{quote}
 \itshape
-``How can we design, train, and evaluate a Machine Learning model capable of
-classifying network traffic with high reliability to detect
-\textbf{Port Scan \& Reconnaissance} attacks, while drastically minimizing the
-false positive rate within a controlled network infrastructure?''
+\textit{Comment peut-on d\'{e}tecter et classifier les attaques de type PortScan
+\`{a} partir de donn\'{e}es de trafic r\'{e}seau (pcap/csv) afin de prot\'{e}ger
+l'infrastructure et alerter les \'{e}quipes SOC en temps r\'{e}el ?}
 \end{quote}
 
-This problem statement aims to deliver a solution that enables: reduction of
-detection time, improvement of alert accuracy, and decision support for network
-administrators.
+Cette probl\'{e}matique a \'{e}t\'{e} valid\'{e}e par quatre entretiens semi-directifs
+conduits aupr\`{e}s d'\'{e}tudiants en ing\'{e}nierie r\'{e}seaux et cybers\'{e}curit\'{e}.
+Les personnes interrog\'{e}es ont confirm\'{e} que la surveillance manuelle est insoutenable,
+que les faux positifs repr\'{e}sentent un point de douleur majeur, et qu'un syst\`{e}me
+capable d'apprentissage comportemental avec r\'{e}ponse autonome gradu\'{e}e r\'{e}pond
+\`{a} un besoin r\'{e}el.
 
 % ============================================================
-%  PARAGRAPH 3 --- Proposed Solution
-% ============================================================
-\section{Proposed Solution}
+\section{Solution propos\'{e}e}
 
-To address this problem, an approach based on \textbf{artificial intelligence},
-and more specifically on \textbf{supervised classification learning}, can be
-adopted.
+Pour r\'{e}soudre cette probl\'{e}matique, nous adoptons une approche fond\'{e}e sur
+\textbf{l'intelligence artificielle}, et plus sp\'{e}cifiquement sur
+\textbf{l'apprentissage automatique supervis\'{e} et non supervis\'{e}}.
 
-The system will exploit labeled network traffic data sourced from recognized
-IDS benchmark datasets. By leveraging features such as the number of distinct
-ports probed per IP, the ratio of SYN packets without completed handshakes,
-flow duration, and the entropy of the targeted port range, the model will learn
-to distinguish benign flows from reconnaissance flows.
+Le syst\`{e}me, baptis\'{e} \textbf{AEGIS Entropy} (\textit{Adaptive Entropy-based
+Gateway for Intrusion Suppression}), combine deux orientations :
 
-\vspace{0.5em}
+\begin{enumerate}
+  \item \textbf{Orientation aide \`{a} la d\'{e}cision :}
+        un tableau de bord SOC temps-r\'{e}el qui affiche les scores de confiance
+        de classification, les scanners actifs, les contacts honeypot et les IP bloqu\'{e}es,
+        permettant aux analystes de comprendre et de valider les d\'{e}cisions du syst\`{e}me.
+  \item \textbf{Orientation automatisation :}
+        un moteur de d\'{e}fense active qui redirige automatiquement les attaquants vers des
+        leurres, mute la surface d'attaque expos\'{e}e (MTD), et bloque les adresses sources
+        malveillantes sans intervention humaine.
+\end{enumerate}
+
+\subsection{Entr\'{e}es et sorties}
+
 \begin{tabular}{@{}l@{\hspace{1em}}p{11cm}@{}}
-  \textbf{Inputs:}      & Feature vectors extracted from network traffic per
-                           time window (10\,s and 60\,s) and per source IP:
-                           TCP flag counters, distinct port count,
-                           inter-arrival time, port entropy, flow duration. \\[0.5em]
-  \textbf{Outputs:}      & Binary classification (\textsc{Benign} /
-                           \textsc{Port\_Scan}) with confidence score; extended
-                           to multi-class scan type classification (SYN / UDP /
-                           ACK / XMAS / Connect). \\[0.5em]
-  \textbf{Model type:}   & Supervised classification (ensemble decision trees)
-                           complemented by an unsupervised anomaly detection
-                           layer for slow scans.
+  \textbf{Entr\'{e}es :}
+    & Vecteurs de 11 caract\'{e}ristiques extraits du trafic r\'{e}seau :
+      Destination Port, Flow Duration, Total Fwd Packets, SYN/RST/ACK Flag Count,
+      Flow IAT Mean, Bwd Packet Length Mean, Init\_Win\_bytes\_forward,
+      et deux placeholders (\texttt{shadow\_node\_interaction},
+      \texttt{mtd\_port\_delta}) activ\'{e}s en production. \\[0.5em]
+  \textbf{Sorties :}
+    & Classification binaire \textsc{Benign} / \textsc{PortScan} avec score de
+      confiance ; une extension multi-classe (SYN / UDP / ACK / XMAS / Connect)
+      est pr\'{e}vue en perspective. \\[0.5em]
+  \textbf{Mod\`{e}les :}
+    & Random Forest (classifieur principal, 100 arbres, bagging)
+      + XGBoost (benchmark, gradient boosting, 100 estimateurs)
+      + Isolation Forest (d\'{e}tection non supervis\'{e}e des scans lents).
 \end{tabular}
 
-% ============================================================
-%  TWO POSSIBLE AI SOLUTIONS
-% ============================================================
-\section{Two Proposed AI Solutions}
+\subsection{M\'{e}thodologie}
 
-\subsection{Automation-Oriented Solution}
+Le projet suit le cadre \textbf{CRISP-DM} (\textit{Cross-Industry Standard Process for
+Data Mining}) : compr\'{e}hension du besoin m\'{e}tier, compr\'{e}hension des donn\'{e}es,
+pr\'{e}paration des donn\'{e}es, mod\'{e}lisation, \'{e}valuation, et d\'{e}ploiement.
+Des contr\^{o}les stricts de non-fuite de donn\'{e}es (\textit{anti-leakage}) sont
+appliqu\'{e}s : le StandardScaler est ajust\'{e} exclusivement sur l'ensemble
+d'entra\^{i}nement, et SMOTE est appliqu\'{e} uniquement apr\`{e}s la s\'{e}paration
+train/test.
 
-A \textbf{fully autonomous} system where the classification model, once
-deployed, analyzes traffic in real time, issues alerts, and
-\textbf{automatically applies} countermeasures (blocking the source IP via
-\texttt{iptables}, redirecting to a \textit{honeypot}). No human intervention
-is required between detection and response.
+\subsection{Donn\'{e}es}
 
-\begin{itemize}[nosep,leftmargin=1.5em]
-  \item \textit{Advantage:} minimal response time ($<$\,15\,s from detection
-        to blocking).
-  \item \textit{Risk:} a false positive results in blocking a legitimate user
-        without human validation.
-\end{itemize}
-
-\subsection{Decision-Support-Oriented Solution}
-
-A system that analyzes traffic and \textbf{presents results on an interactive
-dashboard} (port heat map, attacker profile, alert feed with confidence score
-and severity level). The administrator \textbf{manually decides} whether to
-block the suspicious IP.
-
-\begin{itemize}[nosep,leftmargin=1.5em]
-  \item \textit{Advantage:} full human control; risk of blocking due to false
-        positives is eliminated.
-  \item \textit{Risk:} response time depends on administrator availability.
-\end{itemize}
+Le jeu de donn\'{e}es principal est \textbf{CICIDS2017}, sous-ensemble
+\textit{Friday-WorkingHours-Afternoon-PortScan}, contenant 286\,467 flux r\'{e}seau
+(158\,930 PortScan, 127\,537 BENIGN) avec 79 colonnes brutes, r\'{e}duites \`{a}
+11 caract\'{e}ristiques apr\`{e}s s\'{e}lection.
 
 % ============================================================
-%  DATA DICTIONARY
-% ============================================================
-\section{Data Dictionary}
+\section{Synth\`{e}se des r\'{e}sultats}
 
-\subsection{Data Sources}
+Le syst\`{e}me a \'{e}t\'{e} enti\`{e}rement impl\'{e}ment\'{e} et valid\'{e} sur
+les 57\,294 flux de l'ensemble de test.
 
 \begin{table}[h!]
 \centering
-\small
-\begin{tabular}{L{3.2cm} L{3.5cm} C{2.8cm} L{3.5cm}}
-  \toprule
-  \textbf{Dataset} & \textbf{Subset} & \textbf{Approx.\ Volume} & \textbf{Source} \\
-  \midrule
-  CICIDS2017       & PortScan category       & $\sim$158,000 flows   & UNB / CIC (Canada) \\
-  UNSW-NB15        & Reconnaissance category & $\sim$13,000 records  & UNSW (Australia) \\
-  \bottomrule
+\caption{Performances obtenues sur l'ensemble de test CICIDS2017}
+\begin{tabular}{lcccc}
+\toprule
+\textbf{Mod\`{e}le} & \textbf{Accuracy} & \textbf{F1-Score} & \textbf{FPR} & \textbf{AUC-ROC} \\
+\midrule
+Random Forest & 99.91\% & 99.92\% & 0.11\% & 0.9997 \\
+XGBoost       & 99.91\% & 99.92\% & 0.11\% & 0.9999 \\
+Isolation Forest & 24.63\% & 9.46\% & 53.53\% & --- \\
+\bottomrule
 \end{tabular}
 \end{table}
 
-\subsection{Input Variables (\textit{Features})}
+\noindent Les deux mod\`{e}les supervis\'{e}s d\'{e}passent largement les cibles initiales
+(F1 $\geq$ 88\%, Accuracy $\geq$ 90\%, FPR $<$ 6\%). L'Isolation Forest \'{e}choue
+sur ce jeu de donn\'{e}es en raison du \textbf{paradoxe de l'anomalie majoritaire} :
+PortScan constitue 55.48\% des donn\'{e}es --- la classe majoritaire --- ce qui viole
+l'hypoth\`{e}se de raret\'{e} des anomalies. En production, l'Isolation Forest sera
+r\'{e}-entra\^{i}n\'{e} en mode semi-supervis\'{e} sur le trafic BENIGN uniquement.
 
-\begin{table}[h!]
-\centering
-\small
-\begin{tabular}{L{4cm} C{2.5cm} C{2.5cm} L{4cm}}
-  \toprule
-  \textbf{Variable} & \textbf{Type} & \textbf{Relevance} & \textbf{Role} \\
-  \midrule
-  Distinct Dst Ports / IP & Quantitative & Critical   & Core scanning signature \\
-  SYN Flag Count          & Quantitative & Critical   & SYN stealth scan detection \\
-  RST Flag Count          & Quantitative & Very High  & Probe rejection indicator \\
-  Flow Duration           & Quantitative & High       & Very short in fast scans \\
-  Total Fwd Packets       & Quantitative & High       & Typically 1 per probe \\
-  IAT Mean                & Quantitative & High       & Large in slow scans \\
-  Port Range Entropy      & Quantitative & High       & Randomized vs sequential scan \\
-  ACK Flag Count          & Quantitative & Medium     & ACK scan detection \\
-  Unique Dst IPs / Src    & Quantitative & Medium     & Host discovery phase \\
-  Bwd Packet Length       & Quantitative & Medium     & RST vs SYN-ACK ratio \\
-  TTL Value               & Quantitative & Low        & OS fingerprinting attempts \\
-  \bottomrule
-\end{tabular}
-\end{table}
-
-\subsection{Output Variable (\textit{Label})}
-
-\begin{table}[h!]
-\centering
-\small
-\begin{tabular}{L{4cm} C{2.5cm} L{7cm}}
-  \toprule
-  \textbf{Variable} & \textbf{Type} & \textbf{Values} \\
-  \midrule
-  Traffic class (v1) & Qualitative & \textsc{Benign} / \textsc{Port\_Scan} \\
-  Scan type (v2)     & Qualitative & SYN / UDP / ACK / XMAS / Connect \\
-  \bottomrule
-\end{tabular}
-\end{table}
+Le d\'{e}tail complet du pipeline de donn\'{e}es, des mod\`{e}les, de l'architecture
+de d\'{e}fense et de l'int\'{e}gration est document\'{e} dans le rapport final
+(\texttt{AEGIS.pdf}, 9 chapitres + annexes).
 
 \end{document}

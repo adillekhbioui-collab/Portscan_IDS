@@ -1,0 +1,218 @@
+% ============================================================
+%  Data Dictionary / Dictionnaire de Données
+%  Project: AEGIS Entropy — AI-Based Port Scan Detection
+%  Updated: June 2026 (aligned with final report, 11 features)
+% ============================================================
+\documentclass[12pt,a4paper]{article}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[english]{babel}
+\usepackage{geometry}
+\usepackage{enumitem}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{xcolor}
+\usepackage{titlesec}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+
+\geometry{margin=2.5cm}
+
+% --- Colors ---
+\definecolor{sectionblue}{RGB}{15, 23, 42}
+\definecolor{accentcyan}{RGB}{6, 182, 212}
+
+\titleformat{\section}
+  {\large\bfseries\color{sectionblue}}
+  {\thesection.}{0.5em}{}[\vspace{-0.5em}\textcolor{accentcyan}{\rule{\textwidth}{0.4pt}}]
+\titleformat{\subsection}
+  {\normalsize\bfseries\color{sectionblue}}
+  {\thesubsection.}{0.5em}{}
+
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{gray}{Data Dictionary — AEGIS Entropy}}
+\fancyhead[R]{\small\textcolor{gray}{AI Module — S2}}
+\fancyfoot[C]{\small\thepage}
+\renewcommand{\headrulewidth}{0.4pt}
+
+\newcolumntype{L}[1]{>{\raggedright\arraybackslash}p{#1}}
+
+\begin{document}
+
+\begin{center}
+  {\Large\bfseries Dictionnaire de Donn\'{e}es}\\[0.6em]
+  {\large AEGIS Entropy}\\[0.3em]
+  {\large D\'{e}tection de Port Scan et Reconnaissance R\'{e}seau}\\[1.2em]
+  \begin{tabular}{rl}
+    \textbf{Module :}  & Intelligence Artificielle --- Semestre 2 \\
+    \textbf{\'{E}quipe :} & 5 membres (Ing\'{e}nierie --- ENSA K\'{e}nitra) \\
+    \textbf{Date :}    & Juin 2026 \\
+  \end{tabular}
+\end{center}
+
+\vspace{1em}
+
+% ============================================================
+\section{Introduction}
+
+Ce document d\'{e}finit les 11 caract\'{e}ristiques (\textit{features}) utilis\'{e}es par
+les mod\`{e}les de Machine Learning du syst\`{e}me AEGIS Entropy pour la d\'{e}tection
+des attaques de type Port Scan et Reconnaissance R\'{e}seau. Il est align\'{e} sur le
+rapport final du projet (9 chapitres, Juin 2026).
+
+Le jeu de donn\'{e}es d'entra\^{i}nement et d'\'{e}valuation est
+\textbf{CICIDS2017} (\textit{Canadian Institute for Cybersecurity Intrusion Detection
+System}), sous-ensemble \texttt{Friday-WorkingHours-Afternoon-PortScan}, contenant
+286\,467 flux r\'{e}seau et 79 colonnes brutes.
+
+% ============================================================
+\section{Caract\'{e}ristiques d'entr\'{e}e (\textit{Input Features})}
+
+Les mod\`{e}les op\`{e}rent sur un vecteur de \textbf{11 caract\'{e}ristiques}.
+Neuf sont extraites directement du CSV CICIDS2017 ; deux sont des placeholders
+initialis\'{e}s \`{a} z\'{e}ro pendant l'entra\^{i}nement et activ\'{e}s en production
+par les sous-syst\`{e}mes de d\'{e}fense active (honeypot et MTD).
+
+\begin{table}[h!]
+\centering
+\small
+\renewcommand{\arraystretch}{1.35}
+\begin{tabularx}{\textwidth}{l l l X}
+\toprule
+\textbf{\#} & \textbf{Feature} & \textbf{Type} & \textbf{Description et pertinence} \\
+\midrule
+ 1 & Destination Port      & Quantitative & Num\'{e}ro du port de destination.
+   Proxy pour la diversit\'{e} des ports cibl\'{e}s par le scanner.
+   \textit{Pertinence :} \'{e}lev\'{e}e. \\[0.4em]
+
+ 2 & Flow Duration         & Quantitative & Dur\'{e}e du flux en microsecondes.
+   Les flux de scan sont typiquement tr\`{e}s courts.
+   \textit{Pertinence :} \'{e}lev\'{e}e. \\[0.4em]
+
+ 3 & Total Fwd Packets     & Quantitative & Nombre de paquets envoy\'{e}s dans la
+   direction aller. Un scan envoie g\'{e}n\'{e}ralement 1 paquet par sonde.
+   \textit{Pertinence :} \'{e}lev\'{e}e. \\[0.4em]
+
+ 4 & SYN Flag Count        & Quantitative & Nombre de paquets portant le flag SYN.
+   Indicateur critique des scans SYN furtifs.
+   \textit{Pertinence :} critique. \\[0.4em]
+
+ 5 & RST Flag Count        & Quantitative & Nombre de paquets portant le flag RST.
+   Indique les rejets de connexion sur ports ferm\'{e}s.
+   \textit{Pertinence :} tr\`{e}s \'{e}lev\'{e}e. \\[0.4em]
+
+ 6 & ACK Flag Count        & Quantitative & Nombre de paquets portant le flag ACK.
+   Utilis\'{e} pour la d\'{e}tection des scans ACK.
+   \textit{Pertinence :} moyenne \`{a} \'{e}lev\'{e}e. \\[0.4em]
+
+ 7 & Flow IAT Mean         & Quantitative & Temps moyen inter-arriv\'{e}e entre
+   paquets. Un IAT \'{e}lev\'{e} est caract\'{e}ristique des scans lents.
+   \textit{Pertinence :} \'{e}lev\'{e}e. \\[0.4em]
+
+ 8 & Bwd Packet Length Mean & Quantitative & Taille moyenne des paquets dans la
+   direction retour. Permet de distinguer les r\'{e}ponses RST des SYN-ACK.
+   \textit{Pertinence :} moyenne. \\[0.4em]
+
+ 9 & Init\_Win\_bytes\_forward & Quantitative & Taille de la fen\^{e}tre TCP
+   initiale dans la direction aller. Proxy pour la d\'{e}tection d'empreinte OS.
+   \textit{Pertinence :} moyenne. \\[0.4em]
+
+10 & shadow\_node\_interaction & Binaire & Placeholder. Vaut 0 \`{a} l'entra\^{i}nement.
+   Passe \`{a} 1 en production lorsqu'une IP source contacte un leurre honeypot.
+   \textit{Pertinence :} critique en production. \\[0.4em]
+
+11 & mtd\_port\_delta & Quantitative & Placeholder. Vaut 0 \`{a} l'entra\^{i}nement.
+   En production, indique l'\'{e}cart entre le port sond\'{e} et le port actif
+   apr\`{e}s rotation MTD.
+   \textit{Pertinence :} \'{e}lev\'{e}e en production. \\[0.4em]
+
+\bottomrule
+\end{tabularx}
+\caption{Les 11 caract\'{e}ristiques d'entr\'{e}e utilis\'{e}es par les mod\`{e}les
+AEGIS Entropy. Les features 10 et 11 sont des placeholders pour l'int\'{e}gration
+temps-r\'{e}el.}
+\label{tab:features}
+\end{table}
+
+% ============================================================
+\section{Variable cible (\textit{Target})}
+
+\begin{table}[h!]
+\centering
+\begin{tabularx}{\textwidth}{l l X}
+\toprule
+\textbf{Variable} & \textbf{Type} & \textbf{Valeurs} \\
+\midrule
+Label & Qualitative binaire & \texttt{BENIGN} (0) --- trafic normal,
+                             \texttt{PortScan} (1) --- attaque de scan de ports. \\
+\bottomrule
+\end{tabularx}
+\caption{Variable cible.}
+\end{table}
+
+Le label est extrait de la colonne \texttt{Label} du CSV CICIDS2017. Les entr\'{e}es
+contenant le mot-cl\'{e} \texttt{portscan} (insensible \`{a} la casse) sont cod\'{e}es 1 ;
+toutes les autres sont cod\'{e}es 0.
+
+% ============================================================
+\section{Source des donn\'{e}es}
+
+\begin{itemize}[nosep,leftmargin=1.5em]
+  \item \textbf{Dataset :} CICIDS2017 (\textit{Canadian Institute for Cybersecurity
+        Intrusion Detection System, 2017}).
+  \item \textbf{Fichier :} \texttt{Friday-WorkingHours-Afternoon-PortScan.pcap\_ISCX.csv}
+  \item \textbf{Volume :} 286\,467 flux r\'{e}seau (79 colonnes brutes).
+  \item \textbf{Distribution :} PortScan 158\,930 (55.48\%) / BENIGN 127\,537 (44.52\%).
+  \item \textbf{S\'{e}paration train/test :} 80/20 stratifi\'{e} $\rightarrow$
+        229\,173 flux d'entra\^{i}nement / 57\,294 flux de test.
+  \item \textbf{Apr\`{e}s SMOTE (train seulement) :} 254\,288 \'{e}chantillons
+        \'{e}quilibr\'{e}s (127\,144 BENIGN + 127\,144 PortScan).
+\end{itemize}
+
+% ============================================================
+\section{Pr\'{e}traitement appliqu\'{e}}
+
+Avant entra\^{i}nement, les donn\'{e}es subissent un pipeline \`{a} quatre \'{e}tapes
+avec contr\^{o}le strict de non-fuite :
+
+\begin{enumerate}[nosep,leftmargin=1.5em]
+  \item \textbf{Nettoyage :} suppression des espaces dans les noms de colonnes,
+        remplacement des valeurs infinies par NaN, imputation par la m\'{e}diane
+        (robuste aux outliers).
+  \item \textbf{Capping IQR :} winsorisation des valeurs extr\^{e}mes \`{a}
+        $Q_1 - 1.5\times IQR$ et $Q_3 + 1.5\times IQR$ --- pr\'{e}serve tous
+        les enregistrements d'attaque (pas de suppression).
+  \item \textbf{Correction d'asym\'{e}trie (log1p) :} transformation $\log(1+x)$
+        pour les 5 features ayant $|\text{skew}| > 1.0$ (Flow Duration, Flow IAT Mean,
+        Total Fwd Packets, Destination Port, Bwd Packet Length Mean).
+  \item \textbf{Standardisation + SMOTE :} z-score (StandardScaler) puis sur\'{e}chantillonnage
+        synth\'{e}tique SMOTE ($k=5$). Le scaler est ajust\'{e} \textbf{exclusivement}
+        sur l'ensemble d'entra\^{i}nement ; l'ensemble de test ne voit que
+        \texttt{transform()}.
+\end{enumerate}
+
+% ============================================================
+\section{Mod\`{e}les utilis\'{e}s}
+
+\begin{itemize}[nosep,leftmargin=1.5em]
+  \item \textbf{Random Forest} --- classifieur supervis\'{e} principal (100 arbres, bagging).
+  \item \textbf{XGBoost} --- classifieur supervis\'{e} de comparaison (100 estimateurs,
+        \texttt{max\_depth=6}, gradient boosting).
+  \item \textbf{Isolation Forest} --- d\'{e}tecteur d'anomalies non supervis\'{e}
+        (\texttt{contamination='auto'}), destin\'{e} \`{a} la d\'{e}tection des scans
+        lents et inconnus en production (mode semi-supervis\'{e} sur trafic BENIGN
+        uniquement).
+\end{itemize}
+
+% ============================================================
+\section{R\'{e}f\'{e}rences}
+
+Ce dictionnaire est align\'{e} sur le rapport final AEGIS Entropy (9 chapitres,
+Juin 2026), chapitres 2 (Data Understanding), 3 (Data Preparation), et 4 (Model
+Training and Evaluation). Les m\'{e}triques de performance sont attest\'{e}es par
+\texttt{models/saved/evaluation\_metrics.json}.
+
+\end{document}

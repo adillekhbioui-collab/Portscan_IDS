@@ -36,6 +36,7 @@ import time
 # ---------------------------------------------------------------------------
 # Constants
 # ---------------------------------------------------------------------------
+BASE = Path(__file__).resolve().parent.parent
 DATA_PATH = BASE / "data" / "Friday-WorkingHours-Afternoon-PortScan.pcap_ISCX.csv"
 OUTPUT_DIR = BASE / "pipeline_output"
 RANDOM_STATE = 42

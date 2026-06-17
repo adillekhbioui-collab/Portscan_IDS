@@ -45,10 +45,10 @@ X_train, X_test, y_train, y_test = train_test_split(
 )
 
 # Load Models
-scaler = joblib.load("../models/scaler.pkl")
-rf = joblib.load("../models/random_forest.pkl")
-xgb = joblib.load("../models/xgboost.pkl")
-iso = joblib.load("../models/isolation_forest.pkl")
+scaler = joblib.load("../../models/saved/scaler.pkl")
+rf = joblib.load("../../models/saved/rf_model.pkl")
+xgb = joblib.load("../../models/saved/xgb_model.pkl")
+iso = joblib.load("../../models/saved/isolation_forest.pkl")
 
 X_test_scaled = scaler.transform(X_test)
 

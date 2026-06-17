@@ -69,12 +69,19 @@ for feature in FEATURES:
     Q1 = df[feature].quantile(0.25)
     Q3 = df[feature].quantile(0.75)
     IQR = Q3 - Q1
+
+    # Skip capping for zero-IQR features (e.g., discrete flag counts with many zeros)
+    # to avoid collapsing them into constant columns.
+    if IQR == 0:
+        print(f"{feature}: Skipping IQR capping (Q1=Q3={Q1}, zero variance)")
+        continue
+
     lower_bound = Q1 - 1.5 * IQR
     upper_bound = Q3 + 1.5 * IQR
-    
+
     outliers_count = ((df[feature] < lower_bound) | (df[feature] > upper_bound)).sum()
     print(f"{feature}: {outliers_count} outliers detected.")
-    
+
     # Cap outliers instead of removing rows to preserve data
     df[feature] = np.where(df[feature] < lower_bound, lower_bound, df[feature])
     df[feature] = np.where(df[feature] > upper_bound, upper_bound, df[feature])

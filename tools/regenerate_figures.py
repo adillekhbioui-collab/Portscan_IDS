@@ -8,6 +8,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 from pathlib import Path
 from sklearn.metrics import confusion_matrix, roc_curve, roc_auc_score
+from sklearn.model_selection import train_test_split
 
 BASE = Path(r"C:\Users\Adill\Documents\Ci_RST_S2\AI\New folder\mini_projet\Portscan_IDS")
 OUT_DIR = BASE / "docs" / "reports" / "05_final" / "figures" / "data"
@@ -33,13 +34,28 @@ FEATURES = [
 X = df[FEATURES].copy()
 X.replace([np.inf, -np.inf], np.nan, inplace=True)
 X = X.fillna(X.median())
+
+# Apply same preprocessing as retrain_11features.py
+# 1. IQR outlier capping
+for col in FEATURES:
+    Q1, Q3 = X[col].quantile(0.25), X[col].quantile(0.75)
+    IQR = Q3 - Q1
+    X[col] = X[col].clip(Q1 - 1.5 * IQR, Q3 + 1.5 * IQR)
+
+# 2. Skewness correction (log1p)
+for col in FEATURES:
+    if abs(X[col].skew()) > 1.0:
+        min_val = X[col].min()
+        if min_val < 0:
+            X[col] = X[col] - min_val
+        X[col] = np.log1p(X[col])
+
 X["shadow_node_interaction"] = 0.0
 X["mtd_port_delta"] = 0.0
 
 label_col = [c for c in df.columns if c.lower() == "label"][0]
 y = df[label_col].apply(lambda x: 1 if "portscan" in str(x).lower() else 0)
 
-from sklearn.model_selection import train_test_split
 _, X_test, _, y_test = train_test_split(
     X, y, test_size=0.2, random_state=42, stratify=y
 )
